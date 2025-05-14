@@ -1,4 +1,2 @@
 import './styles/index.scss';
-import { printHello } from './js/index.js';
-
-printHello();
+import './js/index.js';
