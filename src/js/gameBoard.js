@@ -1,4 +1,8 @@
+import { Ship } from "./ship"
+
 export const GameBoard = (function() {
+
+    const shipSizes = [5, 4, 3, 3, 2]
 
     let gameBoard = Array(10).fill().map(() => Array(10).fill(null))
 
@@ -97,8 +101,47 @@ export const GameBoard = (function() {
         return true;
     }
 
-    function placeShipsRandomly() {
-        
+    function placeShipsRandomly(board) {
+        shipSizes.forEach(size => {
+            let placed = false;
+    
+            while (!placed) {
+                // TODO vertical implementation
+                const isHorizontal = true;
+    
+                // Generate random starting coordinates
+                const maxRow = board.length - (isHorizontal ? 1 : size);
+                const maxCol = board[0].length - (isHorizontal ? size : 1);
+                const row = Math.floor(Math.random() * (maxRow + 1));
+                const col = Math.floor(Math.random() * (maxCol + 1));
+    
+                const ship = Ship.create(size);
+                
+                // Store current board state to check if placement succeeded
+                const boardSnapshot = board.map(row => [...row]);
+                
+                // Attempt to place the ship
+                place(row, col, board, ship);
+                
+                // Check if ship was actually placed by comparing with snapshot
+                placed = false;
+                for (let i = 0; i < size; i++) {
+                    if (board[row][col + i] === ship) {
+                        placed = true;
+                        break;
+                    }
+                }
+                
+                // If placement failed, restore board to previous state
+                if (!placed) {
+                    for (let r = 0; r < board.length; r++) {
+                        for (let c = 0; c < board[r].length; c++) {
+                            board[r][c] = boardSnapshot[r][c];
+                        }
+                    }
+                }
+            }
+        });
     }
 
     function printShips(board) {
@@ -121,6 +164,7 @@ export const GameBoard = (function() {
         place,
         receiveAttack,
         isGameOver,
+        placeShipsRandomly,
         printShips
     }
 })()
