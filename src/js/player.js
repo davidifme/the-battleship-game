@@ -22,8 +22,20 @@ export const Player = (function() {
         players = []
     }
 
+    function getPlayer(playerType) {
+
+        for (let index = 0; index < players.length; index++) {
+            if (players[index].playerType === playerType) {
+                return players[index]
+            }
+        }
+
+        return null
+    }
+
     return {
         create,
-        reset
+        reset,
+        getPlayer
     }
 })()

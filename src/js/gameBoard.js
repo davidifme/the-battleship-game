@@ -97,11 +97,26 @@ export const GameBoard = (function() {
         return true;
     }
 
+    function printShips(board) {
+        const printedShips = new Set();
+
+        for (let row = 0; row < board.length; row++) {
+            for (let col = 0; col < board[row].length; col++) {
+                const cell = board[row][col];
+                if (typeof cell === 'object' && cell !== null && !printedShips.has(cell)) {
+                    console.log(cell);
+                    printedShips.add(cell);
+                }
+            }
+        }
+    }
+
     return {
         getBoard,
         create,
         place,
         receiveAttack,
-        isGameOver
+        isGameOver,
+        printShips
     }
 })()
