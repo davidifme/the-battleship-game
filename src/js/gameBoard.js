@@ -97,6 +97,10 @@ export const GameBoard = (function() {
         return true;
     }
 
+    function placeShipsRandomly() {
+        
+    }
+
     function printShips(board) {
         const printedShips = new Set();
 

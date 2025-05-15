@@ -5,8 +5,11 @@ export const DomManager = (function() {
     function renderBoards() {
         renderSingleBoard('human')
         renderSingleBoard('computer')
-        renderLetterTags()
-        renderNumberTags()
+    }
+
+    function renderSingleTags(player) {
+        renderSingleNumberTags(player)
+        renderSingleLetterTags(player)
     }
 
     function renderSingleBoard(player) {
@@ -15,12 +18,14 @@ export const DomManager = (function() {
             const human = Player.getPlayer('human')
             const humanBoardDomElement = document.querySelector('#human-board')
             renderBoardCells(humanBoardDomElement, human.board)
+            renderSingleTags(player)
         }
 
         if (player === 'computer') {
             const computer = Player.getPlayer('computer')
             const computerBoardDomElement = document.querySelector('#computer-board')
             renderBoardCells(computerBoardDomElement, computer.board)
+            renderSingleTags(player)
         }
     }
     
@@ -58,41 +63,43 @@ export const DomManager = (function() {
         }
     }
 
-    function renderNumberTags() {
+    function renderSingleNumberTags(player) {
+        const containerSelector = player === 'human' ? '#human .numbers' : '#computer .numbers';
+        const container = document.querySelector(containerSelector);
 
-        const numberContainers = document.querySelectorAll('.numbers')
-
-        numberContainers.forEach(container => {
+        if (container) {
+            container.innerHTML = '';
             for (let index = 0; index < 10; index++) {
-                const numberTag = document.createElement('div')
-                numberTag.classList.add('number-tag')
-                numberTag.textContent = index + 1
-                container.appendChild(numberTag)
+                const numberTag = document.createElement('div');
+                numberTag.classList.add('number-tag');
+                numberTag.textContent = index + 1;
+                container.appendChild(numberTag);
             }
-        })
+        }
     }
 
-    function renderLetterTags() {
+    function renderSingleLetterTags(player) {
+        const containerSelector = player === 'human' ? '#human .letters' : '#computer .letters';
+        const container = document.querySelector(containerSelector);
 
-        const letterContainers = document.querySelectorAll('.letters')
-
-        const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-
-        letterContainers.forEach(container => {
+        if (container) {
+            container.innerHTML = '';
+            const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
             for (let index = 0; index < letters.length; index++) {
-                const letterTag = document.createElement('div')
-                letterTag.classList.add('letter-tag')
-                letterTag.textContent = letters[index]
-                container.appendChild(letterTag)
+                const letterTag = document.createElement('div');
+                letterTag.classList.add('letter-tag');
+                letterTag.textContent = letters[index];
+                container.appendChild(letterTag);
             }
-        })
+        }
     }
 
     return {
         renderBoards,
         renderBoardCells,
         renderSingleBoard,
-        renderNumberTags,
-        renderLetterTags
+        renderSingleNumberTags,
+        renderSingleLetterTags,
+        renderSingleTags
     }
 })()
