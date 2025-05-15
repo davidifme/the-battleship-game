@@ -6,6 +6,10 @@ export const GameBoard = (function() {
         return gameBoard
     }
 
+    function create() {
+        return Array(10).fill().map(() => Array(10).fill(null))
+    }
+
     function place(row, column, board, ship) {
 
         // The specified row or column is not out of bounds
@@ -95,6 +99,7 @@ export const GameBoard = (function() {
 
     return {
         getBoard,
+        create,
         place,
         receiveAttack,
         isGameOver
