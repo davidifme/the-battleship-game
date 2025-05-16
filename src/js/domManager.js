@@ -162,6 +162,7 @@ export const DomManager = (function() {
 
     function attack(domElement) {
         if (!gameStarted) return
+        if (GameBoard.getCurrentPlayer() !== 'human') return
 
         const row = parseInt(domElement.dataset.row)
         const column = parseInt(domElement.dataset.column)
@@ -174,7 +175,63 @@ export const DomManager = (function() {
             return
         }
 
+        GameBoard.setCurrentPlayer('computer')
         renderSingleBoard('computer')
+
+        setTimeout(() => {
+            computerAttack()
+        }, 350);
+    }
+
+    function computerAttack() {
+        if (GameBoard.getCurrentPlayer() !== 'computer') return
+
+        const humanBoard = Player.getPlayer('human').board
+
+        const maxAttempts = 100;
+        let attempts = 0;
+
+        let found = false
+        while(!found && attempts < maxAttempts) {
+            const randomRow = Math.floor(Math.random() * 10);
+            const randomColumn = Math.floor(Math.random() * 10);
+
+            const cell = humanBoard[randomRow][randomColumn]
+
+            if (cell === 'miss') continue
+
+            if (typeof cell === 'object' && cell !== null) {
+                const ship = cell
+
+                let alreadyHit = false
+
+                for (let index = 0; index < ship.hitCells.length; index++) {
+                    if (randomRow === ship.hitCells[index][0] && randomColumn === ship.hitCells[index][1]) {
+                        alreadyHit = true
+                        break
+                    }
+                }
+
+                if (alreadyHit) continue
+            }
+
+            GameBoard.receiveAttack(randomRow, randomColumn, humanBoard)
+            GameBoard.setCurrentPlayer('human')
+            renderSingleBoard('human')
+
+
+            if (GameBoard.isGameOver(humanBoard)) {
+                gameOver()
+                return
+            }
+
+            found = true
+        }
+
+        if (!found) {
+            console.warn('Computer could not find a valid move after maximum attempts');
+            GameBoard.setCurrentPlayer('human');
+        }
     }
 
     function enableButtons() {
@@ -213,6 +270,7 @@ export const DomManager = (function() {
         attack,
         gameOver,
         enableButtons,
-        disableButtons
+        disableButtons,
+        computerAttack
     }
 })()

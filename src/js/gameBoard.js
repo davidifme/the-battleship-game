@@ -181,7 +181,7 @@ export const GameBoard = (function() {
     }
 
     function getCurrentPlayer() {
-        return Player.getPlayer(currentPlayer)
+        return currentPlayer
     }
 
     function setCurrentPlayer(player) {
