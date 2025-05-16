@@ -14,52 +14,65 @@ export const GameBoard = (function() {
         return Array(10).fill().map(() => Array(10).fill(null))
     }
 
-    function place(row, column, board, ship) {
+    function place(row, column, board, ship, isHorizontal = true) {
 
         // The specified row or column is not out of bounds
         if (row < 0 || row >= board.length || column < 0 || column >= board[0].length) {
             return
         }
 
-        // The ship fits horizontally on the board
-        if (column + ship.length > board[0].length) {
+        // Check if the ship fits on the board (horizontally or vertically)
+        if (isHorizontal && column + ship.length > board[0].length) {
+            return
+        }
+        
+        if (!isHorizontal && row + ship.length > board.length) {
             return
         }
 
         // The ship doesn't overlap with another ship on the board
         for (let index = 0; index < ship.length; index++) {
-            if (board[row][column + index] !== null) {
+            const checkRow = isHorizontal ? row : row + index;
+            const checkCol = isHorizontal ? column + index : column;
+            
+            if (board[checkRow][checkCol] !== null) {
                 return
             }
         }
 
         // Ensure there is a minimum 1-cell buffer around the ship
         for (let index = 0; index < ship.length; index++) {
+            const checkRow = isHorizontal ? row : row + index;
+            const checkCol = isHorizontal ? column + index : column;
 
-            if (column > 0 && board[row][column - 1] !== null) {
+            // Check left cell
+            if (checkCol > 0 && board[checkRow][checkCol - 1] !== null) {
                 return;
             }
 
-            if (column + ship.length < board[0].length && board[row][column + ship.length] !== null) {
+            // Check right cell
+            if (checkCol < board[0].length - 1 && board[checkRow][checkCol + 1] !== null) {
                 return;
             }
 
-            if (row > 0 && board[row - 1][column + index] !== null) {
+            // Check top cell
+            if (checkRow > 0 && board[checkRow - 1][checkCol] !== null) {
                 return;
             }
 
-            if (row < board.length - 1 && board[row + 1][column + index] !== null) {
+            // Check bottom cell
+            if (checkRow < board.length - 1 && board[checkRow + 1][checkCol] !== null) {
                 return;
             }
         }
 
-        ship.position.x = row
-        ship.position.y = column + (ship.length - 1)
-
+        // Place the ship on the board
         for (let index = 0; index < ship.length; index++) {
-            board[row][column + index] = ship
-
-            ship.notHitCells.push([row, column + index])
+            const placeRow = isHorizontal ? row : row + index;
+            const placeCol = isHorizontal ? column + index : column;
+            
+            board[placeRow][placeCol] = ship;
+            ship.notHitCells.push([placeRow, placeCol]);
         }
     }
 
@@ -106,8 +119,8 @@ export const GameBoard = (function() {
             let placed = false;
     
             while (!placed) {
-                // TODO vertical implementation
-                const isHorizontal = true;
+                // Randomly decide if the ship will be horizontal or vertical
+                const isHorizontal = Math.random() < 0.5;
     
                 // Generate random starting coordinates
                 const maxRow = board.length - (isHorizontal ? 1 : size);
@@ -121,12 +134,15 @@ export const GameBoard = (function() {
                 const boardSnapshot = board.map(row => [...row]);
                 
                 // Attempt to place the ship
-                place(row, col, board, ship);
+                place(row, col, board, ship, isHorizontal);
                 
                 // Check if ship was actually placed by comparing with snapshot
                 placed = false;
                 for (let i = 0; i < size; i++) {
-                    if (board[row][col + i] === ship) {
+                    const checkRow = isHorizontal ? row : row + i;
+                    const checkCol = isHorizontal ? col + i : col;
+                    
+                    if (board[checkRow][checkCol] === ship) {
                         placed = true;
                         break;
                     }

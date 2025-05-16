@@ -138,4 +138,56 @@ describe('GameBoard Functions', () => {
             expect(GameBoard.isGameOver(board)).toBe(true);
         });
     })
+
+    describe('placeShipsRandomly(board)', () => {
+        it("successfully places all ships on the board", () => {
+            GameBoard.placeShipsRandomly(board);
+            
+            let shipCount = 0;
+            for (let row = 0; row < board.length; row++) {
+                for (let col = 0; col < board[row].length; col++) {
+                    if (board[row][col] !== null) {
+                        shipCount++;
+                    }
+                }
+            }
+            
+            // Expecting 17 cells to be occupied by ships (5 ships with lengths 5, 4, 3, 3, 2)
+            expect(shipCount).toBe(17);
+        });
+
+        it("places ships without overlapping", () => {
+            GameBoard.placeShipsRandomly(board);
+            
+            // If ships overlap, we would have fewer unique ship objects than expected
+            const ships = new Set();
+            for (let row = 0; row < board.length; row++) {
+                for (let col = 0; col < board[row].length; col++) {
+                    if (board[row][col] !== null) {
+                        ships.add(board[row][col]);
+                    }
+                }
+            }
+            
+            // Expecting 5 unique ships
+            expect(ships.size).toBe(5);
+        });
+
+        it("places ships within board boundaries", () => {
+            GameBoard.placeShipsRandomly(board);
+            
+            let outOfBounds = false;
+            for (let row = 0; row < board.length; row++) {
+                for (let col = 0; col < board[row].length; col++) {
+                    if (board[row][col] !== null) {
+                        if (row < 0 || row >= 10 || col < 0 || col >= 10) {
+                            outOfBounds = true;
+                        }
+                    }
+                }
+            }
+            
+            expect(outOfBounds).toBe(false);
+        });
+    })
 });

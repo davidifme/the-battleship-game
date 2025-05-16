@@ -1,10 +1,21 @@
+import { GameBoard } from "./gameBoard"
 import { Player } from "./player"
 
 export const DomManager = (function() {
 
+    function init() {
+        renderBoards()
+        setupButtons()
+    }
+
     function renderBoards() {
         renderSingleBoard('human')
         renderSingleBoard('computer')
+    }
+
+    function setupButtons() {
+        setupRandomShipPlacementButton()
+        setupStartButton()
     }
 
     function renderSingleTags(player) {
@@ -94,12 +105,52 @@ export const DomManager = (function() {
         }
     }
 
+    function resetBoards() {
+        
+        const human = Player.getPlayer('human')
+        const computer = Player.getPlayer('computer')
+
+        human.board = GameBoard.create()
+        computer.board = GameBoard.create()
+    }
+
+    function resetSingleBoard(player) {
+        const playerObj = Player.getPlayer(player);
+        playerObj.board = GameBoard.create();
+    }
+
+    function setupRandomShipPlacementButton() {
+        const button = document.querySelector('.random-placement')
+
+        const human = Player.getPlayer('human')
+        const computer = Player.getPlayer('computer')
+
+        button.addEventListener('click', () => {
+            resetBoards()
+            GameBoard.placeShipsRandomly(human.board)
+            GameBoard.placeShipsRandomly(computer.board)
+            renderBoards()
+        })
+    }
+
+    function setupStartButton() {
+        const button = document.querySelector('.start-game')
+
+        
+    }
+
     return {
         renderBoards,
         renderBoardCells,
         renderSingleBoard,
         renderSingleNumberTags,
         renderSingleLetterTags,
-        renderSingleTags
+        renderSingleTags,
+        setupRandomShipPlacementButton,
+        setupButtons,
+        init,
+        resetBoards,
+        resetSingleBoard,
+        setupStartButton
     }
 })()

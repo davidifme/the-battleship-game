@@ -2,10 +2,6 @@ export const Ship = (function() {
 
     function create(length) {
         return {
-            position: {
-                x: null,
-                y: null
-            },
             notHitCells: [],
             hitCells: [],
             length,

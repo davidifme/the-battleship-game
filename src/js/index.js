@@ -9,7 +9,5 @@ const computer = Player.create('computer');
 const humanBoard = human.board;
 const computerBoard = computer.board;
 
-GameBoard.placeShipsRandomly(humanBoard);
-GameBoard.placeShipsRandomly(computerBoard);
-
-DomManager.renderBoards();
+DomManager.init();
+GameBoard.printShips(humanBoard)
