@@ -171,7 +171,7 @@ export const DomManager = (function() {
         GameBoard.receiveAttack(row, column, computerBoard)
 
         if (GameBoard.isGameOver(computerBoard)) {
-            gameOver()
+            gameOver('human')
             return
         }
 
@@ -221,7 +221,7 @@ export const DomManager = (function() {
 
 
             if (GameBoard.isGameOver(humanBoard)) {
-                gameOver()
+                gameOver('computer')
                 return
             }
 
@@ -244,10 +244,50 @@ export const DomManager = (function() {
         buttons.forEach(button => button.disabled = true)
     }
 
-    function gameOver() {
+    function gameOver(player) {
+        const modal = document.getElementById('gameOverModal')
+        const closeButton = document.getElementById('modal-close')
+        const modalTitle = document.querySelector('.modal-title')
+
+        function closeModal() {
+            modal.close();
+            endGame();
+        }
+
+        if (player === 'human') {
+            modalTitle.textContent = 'You won!'
+            modalTitle.classList.add('win')
+        }
+
+        if (player === 'computer') {
+            modalTitle.textContent = 'You lost :c'
+            modalTitle.classList.remove('win')
+        }
+
+        modal.addEventListener("click", (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+
+        modal.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        closeButton.addEventListener('click', () => {
+            closeModal();
+        })
+
+        modal.showModal()
+    }
+
+    function endGame() {
         resetBoards()
         renderBoards()
         enableButtons()
+
         gameStarted = false
 
         const startButton = document.querySelector('.start-game') 
