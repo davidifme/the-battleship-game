@@ -1,5 +1,5 @@
 .content {
-    display:  flex;
+    display: flex;
     flex-direction: column;
 
     justify-content: flex-start;
@@ -7,6 +7,13 @@
     
     width: 50%;
 
+}
+
+.title-container {
+    display: flex;
+    margin-left: 50px;
+    justify-content: center;
+    width: 500px;
 }
 
 .gameBoard-content {

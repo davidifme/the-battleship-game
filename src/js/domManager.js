@@ -3,6 +3,8 @@ import { Player } from "./player"
 
 export const DomManager = (function() {
 
+    let gameStarted = false
+
     function init() {
         renderBoards()
         setupButtons()
@@ -52,6 +54,8 @@ export const DomManager = (function() {
 
                 const cellDomElement = document.createElement('button')
                 cellDomElement.classList.add('cell')
+                cellDomElement.dataset.row = row
+                cellDomElement.dataset.column = column
 
                 if (cell === 'miss') {
                     cellDomElement.classList.add('miss')
@@ -60,13 +64,21 @@ export const DomManager = (function() {
                 if (typeof cell === 'object' && cell !== null && cell !== 'miss') {
                     const ship = board[row][column]
 
-                    cellDomElement.classList.add('ship')
+                    if (boardDomElement.id !== 'computer-board') {
+                        cellDomElement.classList.add('ship')
+                    }
 
                     for (let index = 0; index < ship.hitCells.length; index++) {
                         if (row === ship.hitCells[index][0] && column === ship.hitCells[index][1]) {
                             cellDomElement.classList.add('hit')
                         }
                     }
+                }
+
+                if (boardDomElement.id === 'computer-board') {
+                    cellDomElement.addEventListener('click', (event) => {
+                        attack(event.target)
+                    })
                 }
 
                 boardDomElement.appendChild(cellDomElement)
@@ -130,13 +142,59 @@ export const DomManager = (function() {
             GameBoard.placeShipsRandomly(human.board)
             GameBoard.placeShipsRandomly(computer.board)
             renderBoards()
+
+            if (GameBoard.areShipsPlaced(human.board) && GameBoard.areShipsPlaced(computer.board)) {
+                const startButton = document.querySelector('.start-game') 
+                startButton.disabled = false
+            }
         })
     }
 
     function setupStartButton() {
-        const button = document.querySelector('.start-game')
+        const startButton = document.querySelector('.start-game')
+        startButton.disabled = true
 
-        
+        startButton.addEventListener('click', () => {
+            disableButtons()
+            gameStarted = true
+        })
+    }
+
+    function attack(domElement) {
+        if (!gameStarted) return
+
+        const row = parseInt(domElement.dataset.row)
+        const column = parseInt(domElement.dataset.column)
+        const computerBoard = Player.getPlayer('computer').board
+
+        GameBoard.receiveAttack(row, column, computerBoard)
+
+        if (GameBoard.isGameOver(computerBoard)) {
+            gameOver()
+            return
+        }
+
+        renderSingleBoard('computer')
+    }
+
+    function enableButtons() {
+        const buttons = document.querySelectorAll('.buttons button')
+        buttons.forEach(button => button.disabled = false)
+    }
+
+    function disableButtons() {
+        const buttons = document.querySelectorAll('.buttons button')
+        buttons.forEach(button => button.disabled = true)
+    }
+
+    function gameOver() {
+        resetBoards()
+        renderBoards()
+        enableButtons()
+        gameStarted = false
+
+        const startButton = document.querySelector('.start-game') 
+        startButton.disabled = true
     }
 
     return {
@@ -151,6 +209,10 @@ export const DomManager = (function() {
         init,
         resetBoards,
         resetSingleBoard,
-        setupStartButton
+        setupStartButton,
+        attack,
+        gameOver,
+        enableButtons,
+        disableButtons
     }
 })()

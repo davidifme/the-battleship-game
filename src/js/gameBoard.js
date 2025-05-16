@@ -1,3 +1,4 @@
+import { Player } from "./player"
 import { Ship } from "./ship"
 
 export const GameBoard = (function() {
@@ -5,6 +6,8 @@ export const GameBoard = (function() {
     const shipSizes = [5, 4, 3, 3, 2]
 
     let gameBoard = Array(10).fill().map(() => Array(10).fill(null))
+
+    let currentPlayer = 'human'
 
     function getBoard() {
         return gameBoard
@@ -79,7 +82,7 @@ export const GameBoard = (function() {
     function receiveAttack(row, column, board) {
 
         // The specified row or column is not out of bounds
-        if (row < 0 || row >= gameBoard.length || column < 0 || column >= gameBoard[0].length) {
+        if (row < 0 || row >= board.length || column < 0 || column >= board[0].length) {
             return
         }
 
@@ -93,7 +96,7 @@ export const GameBoard = (function() {
             board[row][column] = 'miss'
         }
 
-        if (typeof board[row][column] === 'object') {
+        if (typeof board[row][column] === 'object' && board[row][column] !== null) {
             const ship = board[row][column]
             
             ship.hit(row, column)
@@ -160,6 +163,31 @@ export const GameBoard = (function() {
         });
     }
 
+    function areShipsPlaced(board) {
+        return shipSizes.every(size => {
+            let found = false;
+            for (let row = 0; row < board.length; row++) {
+                for (let col = 0; col < board[row].length; col++) {
+                    const cell = board[row][col];
+                    if (typeof cell === 'object' && cell !== null && cell.length === size) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+            return found;
+        });
+    }
+
+    function getCurrentPlayer() {
+        return Player.getPlayer(currentPlayer)
+    }
+
+    function setCurrentPlayer(player) {
+        currentPlayer = player
+    }
+
     function printShips(board) {
         const printedShips = new Set();
 
@@ -181,6 +209,9 @@ export const GameBoard = (function() {
         receiveAttack,
         isGameOver,
         placeShipsRandomly,
+        areShipsPlaced,
+        getCurrentPlayer,
+        setCurrentPlayer,
         printShips
     }
 })()
