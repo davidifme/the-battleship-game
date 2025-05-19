@@ -467,11 +467,6 @@ export const DomManager = (function() {
             if (e.key.toLowerCase() === 'r' && !gameStarted) {
                 isHorizontal = !isHorizontal;
                 button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
-
-                if (draggedShipLength) {
-                    const cell = document.querySelector('.cell:hover');
-                    if (cell) highlightCells(cell);
-                }
             }
         });
     }
