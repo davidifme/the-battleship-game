@@ -141,6 +141,8 @@ export const DomManager = (function() {
         shipContainer.dataset.name = name;
         shipContainer.draggable = true;
 
+        shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+
         shipContainer.addEventListener('dragstart', handleDragStart);
         shipContainer.addEventListener('dragend', handleDragEnd);
 
@@ -388,6 +390,8 @@ export const DomManager = (function() {
             shipContainer.dataset.name = setShipName(size)
             shipContainer.draggable = true
 
+            shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+
             shipContainer.addEventListener('dragstart', handleDragStart)
             shipContainer.addEventListener('dragend', handleDragEnd)
 
@@ -516,12 +520,22 @@ export const DomManager = (function() {
         button.addEventListener('click', (e) => {
             isHorizontal = !isHorizontal
             button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
+
+            const shipContainers = document.querySelectorAll('.ship-container')
+            shipContainers.forEach(ship => {
+                ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
+            })
         })
 
         document.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 'r' && !gameStarted) {
                 isHorizontal = !isHorizontal;
                 button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
+
+                const shipContainers = document.querySelectorAll('.ship-container')
+                shipContainers.forEach(ship => {
+                    ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
+                })
             }
         });
     }
