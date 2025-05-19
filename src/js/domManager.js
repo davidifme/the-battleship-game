@@ -10,6 +10,7 @@ export const DomManager = (function() {
     let toggle3 = true
     let isHorizontal = true
     let highlightedCells = new Set();
+    let hitQueue = []
 
     function init() {
         renderBoards()
@@ -257,49 +258,101 @@ export const DomManager = (function() {
     }
 
     function computerAttack() {
-        if (GameBoard.getCurrentPlayer() !== 'computer') return
+        if (GameBoard.getCurrentPlayer() !== 'computer') return;
 
-        const humanBoard = Player.getPlayer('human').board
-
+        const humanBoard = Player.getPlayer('human').board;
         const maxAttempts = 100;
         let attempts = 0;
+        let found = false;
 
-        let found = false
-        while(!found && attempts < maxAttempts) {
-            const randomRow = Math.floor(Math.random() * 10);
-            const randomColumn = Math.floor(Math.random() * 10);
+        let hitQueue = DomManager.hitQueue || []; 
+        let lastHitShip = null; 
 
-            const cell = humanBoard[randomRow][randomColumn]
-
-            if (cell === 'miss') continue
-
+        function isValidCell(row, col) {
+            if (row < 0 || row >= 10 || col < 0 || col >= 10) return false;
+            const cell = humanBoard[row][col];
+            if (cell === 'miss') return false;
             if (typeof cell === 'object' && cell !== null) {
-                const ship = cell
+                const ship = cell;
+                return !ship.hitCells.some(([r, c]) => r === row && c === col);
+            }
+            return true;
+        }
 
-                let alreadyHit = false
+        function getAdjacentCells(row, col) {
+            const directions = [
+                [row - 1, col], // Up
+                [row + 1, col], // Down
+                [row, col - 1], // Left
+                [row, col + 1], // Right
+            ];
 
-                for (let index = 0; index < ship.hitCells.length; index++) {
-                    if (randomRow === ship.hitCells[index][0] && randomColumn === ship.hitCells[index][1]) {
-                        alreadyHit = true
-                        break
+            // Shuffle directions to avoid predictable patterns
+            for (let i = directions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [directions[i], directions[j]] = [directions[j], directions[i]];
+            }
+            return directions;
+        }
+
+        while (!found && attempts < maxAttempts) {
+            let row, col;
+
+            if (hitQueue.length > 0) {
+                [row, col] = hitQueue[0]; // Take the first hit to explore
+                const adjacentCells = getAdjacentCells(row, col);
+
+                let validAdjacent = false;
+                for (const [adjRow, adjCol] of adjacentCells) {
+                    if (isValidCell(adjRow, adjCol)) {
+                        row = adjRow;
+                        col = adjCol;
+                        validAdjacent = true;
+                        break;
                     }
                 }
 
-                if (alreadyHit) continue
+                if (!validAdjacent) {
+                    hitQueue.shift();
+                    attempts++;
+                    continue;
+                }
+            } else {
+                // Random mode: Select a random cell
+                row = Math.floor(Math.random() * 10);
+                col = Math.floor(Math.random() * 10);
+                if (!isValidCell(row, col)) {
+                    attempts++;
+                    continue;
+                }
             }
 
-            GameBoard.receiveAttack(randomRow, randomColumn, humanBoard)
+            GameBoard.receiveAttack(row, col, humanBoard);
+            const cell = humanBoard[row][col];
+
+            if (typeof cell === 'object' && cell !== null) {
+                lastHitShip = cell;
+                if (!lastHitShip.isSunk()) {
+                    hitQueue.push([row, col]);
+                }
+            }
+
+            if (lastHitShip && lastHitShip.isSunk()) {
+                hitQueue = [];
+                lastHitShip = null;
+            }
+
+            DomManager.hitQueue = hitQueue; // Persist hitQueue
 
             if (GameBoard.isGameOver(humanBoard)) {
-                renderSingleBoard('human')
-                gameOver('computer')
-                return
+                renderSingleBoard('human');
+                gameOver('computer');
+                return;
             }
 
-            GameBoard.setCurrentPlayer('human')
-            renderSingleBoard('human')
-
-            found = true
+            GameBoard.setCurrentPlayer('human');
+            renderSingleBoard('human');
+            found = true;
         }
 
         if (!found) {
@@ -572,6 +625,7 @@ export const DomManager = (function() {
         gameOver,
         enableButtons,
         disableButtons,
-        computerAttack
+        computerAttack,
+        hitQueue
     }
 })()
