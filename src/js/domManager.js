@@ -8,11 +8,14 @@ export const DomManager = (function() {
     let draggedShipLength;
     let draggedShipName;
     let toggle3 = true
+    let isHorizontal = true
+    let highlightedCells = new Set();
 
     function init() {
         renderBoards()
         renderShips()
         setupButtons()
+        setupOrientationToggle()
     }
 
     function renderBoards() {
@@ -89,7 +92,7 @@ export const DomManager = (function() {
 
                 if (boardDomElement.id === 'human-board') {
                     cellDomElement.dataset.player = 'human'
-                    cellDomElement.addEventListener("dragover", (e) => e.preventDefault());
+                    cellDomElement.addEventListener("dragover", handleDragOver);
                     cellDomElement.addEventListener("drop", handleDrop);
                     cellDomElement.addEventListener("dragenter", handleDragEnter);
                     cellDomElement.addEventListener("dragleave", handleDragLeave);
@@ -371,25 +374,44 @@ export const DomManager = (function() {
 
     function handleDragEnd(e) {
         e.target.style.opacity = '1'
+        clearHighlights()
+        draggedShipLength = null
     }
 
     function handleDragEnter(e) {
+        e.preventDefault()
 
+        if (gameStarted) return
+
+        highlightCells(e.target)
     }
 
     function handleDragLeave(e) {
+        e.preventDefault()
+        if (gameStarted) return
 
+        const relatedTarget = e.relatedTarget;
+        if (!relatedTarget || !highlightedCells.has(relatedTarget)) {
+            clearHighlights();
+        }
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault()
     }
 
     function handleDrop(e) {
+        e.preventDefault()
+        if (gameStarted) return
+
         const row = parseInt(e.target.dataset.row)
         const column = parseInt(e.target.dataset.column)
         const board = Player.getPlayer('human').board
         const ship = Ship.create(draggedShipLength)
         const draggedShip = document.querySelector(`[data-name="${draggedShipName}"]`)
 
-        if (GameBoard.canBePlaced(row, column, board, ship.length, true)) {
-            GameBoard.place(row, column, board, ship, true)
+        if (GameBoard.canBePlaced(row, column, board, ship.length, isHorizontal)) {
+            GameBoard.place(row, column, board, ship, isHorizontal)
             renderSingleBoard('human')
             draggedShip.remove()
 
@@ -397,6 +419,61 @@ export const DomManager = (function() {
                 enableStartButton()
             }
         }
+        clearHighlights()
+    }
+
+    function clearHighlights() {
+        const cells = document.querySelectorAll('#human-board .cell');
+        cells.forEach(cell => {
+            cell.classList.remove('valid', 'invalid');
+        });
+    }
+
+    function highlightCells(target) {
+        clearHighlights();
+        if (!draggedShipLength || gameStarted) return;
+
+        const row = parseInt(target.dataset.row);
+        const column = parseInt(target.dataset.column);
+        const board = Player.getPlayer('human').board;
+
+        const canPlace = GameBoard.canBePlaced(row, column, board, draggedShipLength, isHorizontal);
+
+        for (let i = 0; i < draggedShipLength; i++) {
+            const cellRow = isHorizontal ? row : row + i;
+            const cellCol = isHorizontal ? column + i : column;
+            
+            if (cellRow >= 0 && cellRow < 10 && cellCol >= 0 && cellCol < 10) {
+                const cell = document.querySelector(
+                    `#human-board .cell[data-row="${cellRow}"][data-column="${cellCol}"]`
+                );
+                if (cell) {
+                    cell.classList.add(canPlace ? 'valid' : 'invalid');
+                    highlightedCells.add(cell);
+                }
+            }
+        }
+    }
+
+    function setupOrientationToggle() {
+        const button = document.querySelector('.direction')
+
+        button.addEventListener('click', (e) => {
+            isHorizontal = !isHorizontal
+            button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
+        })
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'r' && !gameStarted) {
+                isHorizontal = !isHorizontal;
+                button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
+
+                if (draggedShipLength) {
+                    const cell = document.querySelector('.cell:hover');
+                    if (cell) highlightCells(cell);
+                }
+            }
+        });
     }
 
     return {

@@ -7,7 +7,3 @@ const human = Player.create('human');
 const computer = Player.create('computer');
 
 DomManager.init();
-
-console.log('Computer from index.js:', computer);
-console.log('Computer board from index.js:', computer.board);
-console.log('Computer from Player.getPlayer:', Player.getPlayer('computer'));

@@ -88,10 +88,15 @@
 
 // Drag and Drop
 
-.valid {
+.cell.valid {
     background-color: green;
 }
 
-.invalid {
+.cell.invalid {
     background-color: red;
+}
+
+.cell.valid, 
+.cell.invalid {
+    transition: background-color 0.1s ease;
 }
