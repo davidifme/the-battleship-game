@@ -1,12 +1,17 @@
 import { GameBoard } from "./gameBoard"
 import { Player } from "./player"
+import { Ship } from "./ship";
 
 export const DomManager = (function() {
 
     let gameStarted = false
+    let draggedShipLength;
+    let draggedShipName;
+    let toggle3 = true
 
     function init() {
         renderBoards()
+        renderShips()
         setupButtons()
     }
 
@@ -76,9 +81,18 @@ export const DomManager = (function() {
                 }
 
                 if (boardDomElement.id === 'computer-board') {
+                    cellDomElement.dataset.player = 'computer'
                     cellDomElement.addEventListener('click', (event) => {
                         attack(event.target)
                     })
+                }
+
+                if (boardDomElement.id === 'human-board') {
+                    cellDomElement.dataset.player = 'human'
+                    cellDomElement.addEventListener("dragover", (e) => e.preventDefault());
+                    cellDomElement.addEventListener("drop", handleDrop);
+                    cellDomElement.addEventListener("dragenter", handleDragEnter);
+                    cellDomElement.addEventListener("dragleave", handleDragLeave);
                 }
 
                 boardDomElement.appendChild(cellDomElement)
@@ -118,7 +132,6 @@ export const DomManager = (function() {
     }
 
     function resetBoards() {
-        
         const human = Player.getPlayer('human')
         const computer = Player.getPlayer('computer')
 
@@ -133,28 +146,31 @@ export const DomManager = (function() {
 
     function setupRandomShipPlacementButton() {
         const button = document.querySelector('.random-placement')
-
         const human = Player.getPlayer('human')
-        const computer = Player.getPlayer('computer')
 
         button.addEventListener('click', () => {
-            resetBoards()
+            resetSingleBoard('human')
             GameBoard.placeShipsRandomly(human.board)
-            GameBoard.placeShipsRandomly(computer.board)
-            renderBoards()
+            renderSingleBoard('human')
 
-            if (GameBoard.areShipsPlaced(human.board) && GameBoard.areShipsPlaced(computer.board)) {
-                const startButton = document.querySelector('.start-game') 
-                startButton.disabled = false
+            if (GameBoard.areShipsPlaced(human.board)) {
+                enableStartButton()
             }
         })
     }
 
+    function placeComputerShips() {
+        const computerBoard = Player.getPlayer('computer').board
+        GameBoard.placeShipsRandomly(computerBoard)
+        renderSingleBoard('computer')
+    }
+
     function setupStartButton() {
-        const startButton = document.querySelector('.start-game')
+        const startButton = document.querySelector('.start-game') 
         startButton.disabled = true
 
         startButton.addEventListener('click', () => {
+            placeComputerShips()
             disableButtons()
             gameStarted = true
         })
@@ -171,6 +187,7 @@ export const DomManager = (function() {
         GameBoard.receiveAttack(row, column, computerBoard)
 
         if (GameBoard.isGameOver(computerBoard)) {
+            renderSingleBoard('computer')
             gameOver('human')
             return
         }
@@ -216,14 +233,15 @@ export const DomManager = (function() {
             }
 
             GameBoard.receiveAttack(randomRow, randomColumn, humanBoard)
-            GameBoard.setCurrentPlayer('human')
-            renderSingleBoard('human')
-
 
             if (GameBoard.isGameOver(humanBoard)) {
+                renderSingleBoard('human')
                 gameOver('computer')
                 return
             }
+
+            GameBoard.setCurrentPlayer('human')
+            renderSingleBoard('human')
 
             found = true
         }
@@ -242,6 +260,16 @@ export const DomManager = (function() {
     function disableButtons() {
         const buttons = document.querySelectorAll('.buttons button')
         buttons.forEach(button => button.disabled = true)
+    }
+
+    function enableStartButton() {
+        const startButton = document.querySelector('.start-game') 
+        startButton.disabled = false
+    }
+
+    function disableStartButton() {
+        const startButton = document.querySelector('.start-game') 
+        startButton.disabled = true
     }
 
     function gameOver(player) {
@@ -286,12 +314,89 @@ export const DomManager = (function() {
     function endGame() {
         resetBoards()
         renderBoards()
+        renderShips()
         enableButtons()
 
         gameStarted = false
 
-        const startButton = document.querySelector('.start-game') 
-        startButton.disabled = true
+        disableStartButton()
+    }
+
+    function renderShips() {
+        const shipSizes = GameBoard.getShipSizes()
+        const shipsContainer = document.querySelector('.ships')
+        shipsContainer.innerHTML = ''
+
+        shipSizes.forEach(size => {
+            const shipContainer = document.createElement('div')
+            shipContainer.classList.add('ship-container')
+            shipContainer.dataset.length = size
+            shipContainer.dataset.name = setShipName(size)
+            shipContainer.draggable = true
+
+            shipContainer.addEventListener('dragstart', handleDragStart)
+            shipContainer.addEventListener('dragend', handleDragEnd)
+
+            for (let index = 0; index < size; index++) {
+                const shipCell = document.createElement('div')
+                shipCell.classList.add('ship-cell')
+                shipContainer.appendChild(shipCell)
+            }
+
+            shipContainer.addEventListener('dragstart', (e) => {
+                draggedShipLength = parseInt(e.target.dataset.length)
+            })
+
+            shipsContainer.appendChild(shipContainer)
+        })
+
+    }
+
+    function setShipName(shipLength) {
+        if (shipLength === 5) return 'Carrier';
+        if (shipLength === 4) return 'Battleship';
+        if (shipLength === 3) {
+            const name = toggle3 ? 'Destroyer' : 'Submarine';
+            toggle3 = !toggle3;
+            return name;
+        }
+        if (shipLength === 2) return 'Patrol';
+    }
+
+    function handleDragStart(e) {
+        e.target.style.opacity = '0.5'
+        draggedShipLength = parseInt(e.target.dataset.length)
+        draggedShipName = e.target.dataset.name
+    }
+
+    function handleDragEnd(e) {
+        e.target.style.opacity = '1'
+    }
+
+    function handleDragEnter(e) {
+
+    }
+
+    function handleDragLeave(e) {
+
+    }
+
+    function handleDrop(e) {
+        const row = parseInt(e.target.dataset.row)
+        const column = parseInt(e.target.dataset.column)
+        const board = Player.getPlayer('human').board
+        const ship = Ship.create(draggedShipLength)
+        const draggedShip = document.querySelector(`[data-name="${draggedShipName}"]`)
+
+        if (GameBoard.canBePlaced(row, column, board, ship.length, true)) {
+            GameBoard.place(row, column, board, ship, true)
+            renderSingleBoard('human')
+            draggedShip.remove()
+
+            if (GameBoard.areShipsPlaced(board)) {
+                enableStartButton()
+            }
+        }
     }
 
     return {

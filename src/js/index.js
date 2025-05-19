@@ -6,8 +6,8 @@ import { Ship } from "./ship";
 const human = Player.create('human');
 const computer = Player.create('computer');
 
-const humanBoard = human.board;
-const computerBoard = computer.board;
-
 DomManager.init();
-GameBoard.printShips(humanBoard)
+
+console.log('Computer from index.js:', computer);
+console.log('Computer board from index.js:', computer.board);
+console.log('Computer from Player.getPlayer:', Player.getPlayer('computer'));

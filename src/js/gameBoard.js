@@ -13,6 +13,10 @@ export const GameBoard = (function() {
         return gameBoard
     }
 
+    function getShipSizes() {
+        return shipSizes
+    }
+
     function create() {
         return Array(10).fill().map(() => Array(10).fill(null))
     }
@@ -183,20 +187,29 @@ export const GameBoard = (function() {
     }
 
     function areShipsPlaced(board) {
-        return shipSizes.every(size => {
-            let found = false;
-            for (let row = 0; row < board.length; row++) {
-                for (let col = 0; col < board[row].length; col++) {
-                    const cell = board[row][col];
-                    if (typeof cell === 'object' && cell !== null && cell.length === size) {
-                        found = true;
-                        break;
-                    }
+        const requiredCounts = {};
+    
+        for (const size of shipSizes) {
+            requiredCounts[size] = (requiredCounts[size] || 0) + 1;
+        }
+    
+        const foundCounts = {};
+        const countedShips = new Set();
+    
+        for (let row = 0; row < board.length; row++) {
+            for (let col = 0; col < board[row].length; col++) {
+                const cell = board[row][col];
+                if (typeof cell === 'object' && cell !== null && !countedShips.has(cell)) {
+                    const size = cell.length;
+                    foundCounts[size] = (foundCounts[size] || 0) + 1;
+                    countedShips.add(cell);
                 }
-                if (found) break;
             }
-            return found;
-        });
+        }
+    
+        return Object.entries(requiredCounts).every(([size, count]) =>
+            foundCounts[size] === count
+        );
     }
 
     function getCurrentPlayer() {
@@ -231,6 +244,8 @@ export const GameBoard = (function() {
         areShipsPlaced,
         getCurrentPlayer,
         setCurrentPlayer,
+        getShipSizes,
+        canBePlaced,
         printShips
     }
 })()
