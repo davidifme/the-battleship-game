@@ -10,7 +10,8 @@ export const DomManager = (function() {
     let toggle3 = true
     let isHorizontal = true
     let highlightedCells = new Set();
-    let hitQueue = []
+    let hitQueue = [] // [{ row, col, ship }]
+    let directionMap = new Map() // Map<ship, 'horizontal'|'vertical'|null>
 
     function init() {
         renderBoards()
@@ -259,15 +260,17 @@ export const DomManager = (function() {
 
     function computerAttack() {
         if (GameBoard.getCurrentPlayer() !== 'computer') return;
-
+    
         const humanBoard = Player.getPlayer('human').board;
         const maxAttempts = 100;
         let attempts = 0;
         let found = false;
-
-        let hitQueue = DomManager.hitQueue || []; 
-        let lastHitShip = null; 
-
+    
+        // Persistent state
+        let hitQueue = DomManager.hitQueue || []; // [{ row, col, ship }]
+        let directionMap = DomManager.directionMap || new Map(); // Map<ship, 'horizontal'|'vertical'|null>
+    
+        // Helper: Check if a cell is valid for attack
         function isValidCell(row, col) {
             if (row < 0 || row >= 10 || col < 0 || col >= 10) return false;
             const cell = humanBoard[row][col];
@@ -278,7 +281,47 @@ export const DomManager = (function() {
             }
             return true;
         }
-
+    
+        // Helper: Get all possible cells in the ship's direction
+        function getDirectionalCells(ship, hitQueue) {
+            const direction = directionMap.get(ship);
+            const shipHits = hitQueue.filter(hit => hit.ship === ship);
+            if (!direction || shipHits.length === 0) return [];
+    
+            let cells = [];
+    
+            if (direction === 'horizontal') {
+                const row = shipHits[0].row;
+                const cols = shipHits.map(hit => hit.col);
+                const minCol = Math.min(...cols);
+                const maxCol = Math.max(...cols);
+                // Extend up to max ship length (5 for Carrier)
+                for (let col = minCol - 5; col <= maxCol + 5; col++) {
+                    if (col >= 0 && col < 10 && isValidCell(row, col)) {
+                        cells.push([row, col]);
+                    }
+                }
+            } else if (direction === 'vertical') {
+                const col = shipHits[0].col;
+                const rows = shipHits.map(hit => hit.row);
+                const minRow = Math.min(...rows);
+                const maxRow = Math.max(...rows);
+                for (let row = minRow - 5; row <= maxRow + 5; row++) {
+                    if (row >= 0 && row < 10 && isValidCell(row, col)) {
+                        cells.push([row, col]);
+                    }
+                }
+            }
+    
+            // Shuffle cells to avoid predictable order
+            for (let i = cells.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cells[i], cells[j]] = [cells[j], cells[i]];
+            }
+            return cells;
+        }
+    
+        // Helper: Get all adjacent cells in random order (fallback)
         function getAdjacentCells(row, col) {
             const directions = [
                 [row - 1, col], // Up
@@ -286,39 +329,66 @@ export const DomManager = (function() {
                 [row, col - 1], // Left
                 [row, col + 1], // Right
             ];
-
-            // Shuffle directions to avoid predictable patterns
+            // Shuffle directions
             for (let i = directions.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [directions[i], directions[j]] = [directions[j], directions[i]];
             }
-            return directions;
+            return directions.filter(([r, c]) => isValidCell(r, c));
         }
-
+    
+        // Helper: Infer ship direction based on hits
+        function inferDirection(ship) {
+            const shipHits = hitQueue.filter(hit => hit.ship === ship);
+            if (shipHits.length < 2) return null;
+    
+            const [hit1, hit2] = shipHits;
+            if (hit1.row === hit2.row) return 'horizontal';
+            if (hit1.col === hit2.col) return 'vertical';
+            return null;
+        }
+    
         while (!found && attempts < maxAttempts) {
-            let row, col;
-
+            let row, col, currentShip;
+    
+            // Hunting mode: Prioritize directional cells
             if (hitQueue.length > 0) {
-                [row, col] = hitQueue[0]; // Take the first hit to explore
-                const adjacentCells = getAdjacentCells(row, col);
-
-                let validAdjacent = false;
-                for (const [adjRow, adjCol] of adjacentCells) {
-                    if (isValidCell(adjRow, adjCol)) {
-                        row = adjRow;
-                        col = adjCol;
-                        validAdjacent = true;
-                        break;
+                ({ row, col, ship: currentShip } = hitQueue[0]);
+                let direction = directionMap.get(currentShip) || inferDirection(currentShip);
+    
+                // Update directionMap if direction is inferred
+                if (direction && !directionMap.has(currentShip)) {
+                    directionMap.set(currentShip, direction);
+                }
+    
+                let validCell = false;
+    
+                // Try directional cells if direction is known
+                if (direction) {
+                    const directionalCells = getDirectionalCells(currentShip, hitQueue);
+                    if (directionalCells.length > 0) {
+                        [row, col] = directionalCells[0];
+                        validCell = true;
                     }
                 }
-
-                if (!validAdjacent) {
+    
+                // Fallback to adjacent cells only if no direction is known
+                if (!validCell && !direction) {
+                    const adjacentCells = getAdjacentCells(row, col);
+                    if (adjacentCells.length > 0) {
+                        [row, col] = adjacentCells[0];
+                        validCell = true;
+                    }
+                }
+    
+                if (!validCell) {
+                    // No valid cells; try next hit in queue
                     hitQueue.shift();
                     attempts++;
                     continue;
                 }
             } else {
-                // Random mode: Select a random cell
+                // Random mode
                 row = Math.floor(Math.random() * 10);
                 col = Math.floor(Math.random() * 10);
                 if (!isValidCell(row, col)) {
@@ -326,35 +396,37 @@ export const DomManager = (function() {
                     continue;
                 }
             }
-
+    
+            // Perform the attack
             GameBoard.receiveAttack(row, col, humanBoard);
             const cell = humanBoard[row][col];
-
+    
+            // Check if attack hit a ship
             if (typeof cell === 'object' && cell !== null) {
-                lastHitShip = cell;
-                if (!lastHitShip.isSunk()) {
-                    hitQueue.push([row, col]);
-                }
+                hitQueue.push({ row, col, ship: cell });
             }
-
-            if (lastHitShip && lastHitShip.isSunk()) {
-                hitQueue = [];
-                lastHitShip = null;
+    
+            // If ship is sunk, clear its state
+            if (currentShip && currentShip.isSunk()) {
+                hitQueue = hitQueue.filter(hit => hit.ship !== currentShip);
+                directionMap.delete(currentShip);
             }
-
-            DomManager.hitQueue = hitQueue; // Persist hitQueue
-
+    
+            // Update state
+            DomManager.hitQueue = hitQueue;
+            DomManager.directionMap = directionMap;
+    
             if (GameBoard.isGameOver(humanBoard)) {
                 renderSingleBoard('human');
                 gameOver('computer');
                 return;
             }
-
+    
             GameBoard.setCurrentPlayer('human');
             renderSingleBoard('human');
             found = true;
         }
-
+    
         if (!found) {
             console.warn('Computer could not find a valid move after maximum attempts');
             GameBoard.setCurrentPlayer('human');
@@ -425,6 +497,9 @@ export const DomManager = (function() {
         renderBoards()
         renderShips()
         enableButtons()
+
+        hitQueue = [];
+        directionMap = new Map();
 
         gameStarted = false
 
