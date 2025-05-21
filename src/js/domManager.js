@@ -3,7 +3,6 @@ import { Player } from "./player"
 import { Ship } from "./ship";
 
 export const DomManager = (function() {
-
     let gameStarted = false
     let draggedShipLength;
     let draggedShipName;
@@ -13,103 +12,251 @@ export const DomManager = (function() {
     let hitQueue = [] // [{ row, col, ship }]
     let directionMap = new Map() // Map<ship, 'horizontal'|'vertical'|null>
 
-    function init() {
-        renderBoards()
-        renderShips()
-        setupButtons()
-        setupOrientationToggle()
-    }
+    const setup = (function() {
+        function buttons() {
+            randomShipPlacementButton()
+            startButton()
+            resetButton()
+        }
 
-    function renderBoards() {
-        renderSingleBoard('human')
-        renderSingleBoard('computer')
-    }
-
-    function setupButtons() {
-        setupRandomShipPlacementButton()
-        setupStartButton()
-        setupResetButton()
-    }
-
-    function renderSingleTags(player) {
-        renderSingleNumberTags(player)
-        renderSingleLetterTags(player)
-    }
-
-    function renderSingleBoard(player) {
-
-        if (player === 'human') {
+        function randomShipPlacementButton() {
+            const button = document.querySelector('.random-placement')
             const human = Player.getPlayer('human')
-            const humanBoardDomElement = document.querySelector('#human-board')
-            renderBoardCells(humanBoardDomElement, human.board)
-            renderSingleTags(player)
-        }
-
-        if (player === 'computer') {
-            const computer = Player.getPlayer('computer')
-            const computerBoardDomElement = document.querySelector('#computer-board')
-            renderBoardCells(computerBoardDomElement, computer.board)
-            renderSingleTags(player)
-        }
-    }
     
-    function renderBoardCells(domElement, board) {
-
-        const boardDomElement = domElement
-        boardDomElement.innerHTML = ''
-
-        for (let row = 0; row < board.length; row++) {
-            for (let column = 0; column < board[0].length; column++) {
-                
-                const cell = board[row][column]
-
-                const cellDomElement = document.createElement('button')
-                cellDomElement.classList.add('cell')
-                cellDomElement.dataset.row = row
-                cellDomElement.dataset.column = column
-
-                if (cell === 'miss') {
-                    cellDomElement.classList.add('miss')
+            button.addEventListener('click', () => {
+                resetSingleBoard('human')
+                GameBoard.placeShipsRandomly(human.board)
+                render.singleBoard('human')
+                removeDraggableShips()
+    
+                if (GameBoard.areShipsPlaced(human.board)) {
+                    enableStartButton()
                 }
+            })
+        }
 
-                if (typeof cell === 'object' && cell !== null && cell !== 'miss') {
-                    const ship = board[row][column]
+        function startButton() {
+            const startButton = document.querySelector('.start-game') 
+            startButton.disabled = true
+    
+            startButton.addEventListener('click', () => {
+                placeComputerShips()
+                disableButtons()
+                gameStarted = true
+            })
+        }
 
-                    if (boardDomElement.id !== 'computer-board') {
-                        cellDomElement.classList.add('ship')
-
-                        cellDomElement.addEventListener('click', () => {
-                            if (!gameStarted) {
-                                removeShip(ship, row, column);
-                            }
-                        })
-                    }
-
-                    for (let index = 0; index < ship.hitCells.length; index++) {
-                        if (row === ship.hitCells[index][0] && column === ship.hitCells[index][1]) {
-                            cellDomElement.classList.add('hit')
-                        }
-                    }
-                }
-
-                if (boardDomElement.id === 'computer-board') {
-                    cellDomElement.dataset.player = 'computer'
-                    cellDomElement.addEventListener('click', (event) => {
-                        attack(event.target)
+        function orientationToggle() {
+            const button = document.querySelector('.direction')
+    
+            button.addEventListener('click', (e) => {
+                isHorizontal = !isHorizontal
+                button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
+    
+                const shipContainers = document.querySelectorAll('.ship-container')
+                shipContainers.forEach(ship => {
+                    ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
+                })
+            })
+    
+            document.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'r' && !gameStarted) {
+                    isHorizontal = !isHorizontal;
+                    button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
+    
+                    const shipContainers = document.querySelectorAll('.ship-container')
+                    shipContainers.forEach(ship => {
+                        ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
                     })
                 }
+            });
+        }
+    
+        function resetButton() {
+            const button = document.querySelector('.reset-board')
+    
+            button.addEventListener('click', (e) => {
+                resetSingleBoard('human')
+                render.singleBoard('human')
+                render.ships()
+            })
+        }
 
-                if (boardDomElement.id === 'human-board') {
-                    cellDomElement.dataset.player = 'human'
-                    cellDomElement.addEventListener("dragover", handleDragOver);
-                    cellDomElement.addEventListener("drop", handleDrop);
-                    cellDomElement.addEventListener("dragenter", handleDragEnter);
-                    cellDomElement.addEventListener("dragleave", handleDragLeave);
-                }
+        return {
+            buttons,
+            randomShipPlacementButton,
+            startButton,
+            orientationToggle,
+            resetButton
+        }
+    })()
 
-                boardDomElement.appendChild(cellDomElement)
+    const render = (function() {
+        function boards() {
+            render.singleBoard('human')
+            render.singleBoard('computer')
+        }
+    
+        function singleTags(player) {
+            render.singleNumberTags(player)
+            render.singleLetterTags(player)
+        }
+    
+        function singleBoard(player) {
+    
+            if (player === 'human') {
+                const human = Player.getPlayer('human')
+                const humanBoardDomElement = document.querySelector('#human-board')
+                render.boardCells(humanBoardDomElement, human.board)
+                render.singleTags(player)
+            }
+    
+            if (player === 'computer') {
+                const computer = Player.getPlayer('computer')
+                const computerBoardDomElement = document.querySelector('#computer-board')
+                render.boardCells(computerBoardDomElement, computer.board)
+                render.singleTags(player)
             }
         }
+        
+        function boardCells(domElement, board) {
+    
+            const boardDomElement = domElement
+            boardDomElement.innerHTML = ''
+    
+            for (let row = 0; row < board.length; row++) {
+                for (let column = 0; column < board[0].length; column++) {
+                    
+                    const cell = board[row][column]
+    
+                    const cellDomElement = document.createElement('button')
+                    cellDomElement.classList.add('cell')
+                    cellDomElement.dataset.row = row
+                    cellDomElement.dataset.column = column
+    
+                    if (cell === 'miss') {
+                        cellDomElement.classList.add('miss')
+                    }
+    
+                    if (typeof cell === 'object' && cell !== null && cell !== 'miss') {
+                        const ship = board[row][column]
+    
+                        if (boardDomElement.id !== 'computer-board') {
+                            cellDomElement.classList.add('ship')
+    
+                            cellDomElement.addEventListener('click', () => {
+                                if (!gameStarted) {
+                                    removeShip(ship, row, column);
+                                }
+                            })
+                        }
+    
+                        for (let index = 0; index < ship.hitCells.length; index++) {
+                            if (row === ship.hitCells[index][0] && column === ship.hitCells[index][1]) {
+                                cellDomElement.classList.add('hit')
+                            }
+                        }
+                    }
+    
+                    if (boardDomElement.id === 'computer-board') {
+                        cellDomElement.dataset.player = 'computer'
+                        cellDomElement.addEventListener('click', (event) => {
+                            attack(event.target)
+                        })
+                    }
+    
+                    if (boardDomElement.id === 'human-board') {
+                        cellDomElement.dataset.player = 'human'
+                        cellDomElement.addEventListener("dragover", handleDragOver);
+                        cellDomElement.addEventListener("drop", handleDrop);
+                        cellDomElement.addEventListener("dragenter", handleDragEnter);
+                        cellDomElement.addEventListener("dragleave", handleDragLeave);
+                    }
+    
+                    boardDomElement.appendChild(cellDomElement)
+                }
+            }
+        }
+
+        function singleNumberTags(player) {
+            const containerSelector = player === 'human' ? '#human .numbers' : '#computer .numbers';
+            const container = document.querySelector(containerSelector);
+    
+            if (container) {
+                container.innerHTML = '';
+                for (let index = 0; index < 10; index++) {
+                    const numberTag = document.createElement('div');
+                    numberTag.classList.add('number-tag');
+                    numberTag.textContent = index + 1;
+                    container.appendChild(numberTag);
+                }
+            }
+        }
+    
+        function singleLetterTags(player) {
+            const containerSelector = player === 'human' ? '#human .letters' : '#computer .letters';
+            const container = document.querySelector(containerSelector);
+    
+            if (container) {
+                container.innerHTML = '';
+                const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+                for (let index = 0; index < letters.length; index++) {
+                    const letterTag = document.createElement('div');
+                    letterTag.classList.add('letter-tag');
+                    letterTag.textContent = letters[index];
+                    container.appendChild(letterTag);
+                }
+            }
+        }
+
+        function ships() {
+            const shipSizes = GameBoard.getShipSizes()
+            const shipsContainer = document.querySelector('.ships')
+            shipsContainer.innerHTML = ''
+    
+            shipSizes.forEach(size => {
+                const shipContainer = document.createElement('div')
+                shipContainer.classList.add('ship-container')
+                shipContainer.dataset.length = size
+                shipContainer.dataset.name = setShipName(size)
+                shipContainer.draggable = true
+    
+                shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+    
+                shipContainer.addEventListener('dragstart', handleDragStart)
+                shipContainer.addEventListener('dragend', handleDragEnd)
+    
+                for (let index = 0; index < size; index++) {
+                    const shipCell = document.createElement('div')
+                    shipCell.classList.add('ship-cell')
+                    shipContainer.appendChild(shipCell)
+                }
+    
+                shipContainer.addEventListener('dragstart', (e) => {
+                    draggedShipLength = parseInt(e.target.dataset.length)
+                })
+    
+                shipsContainer.appendChild(shipContainer)
+            })
+    
+        }
+
+        return {
+            boards,
+            singleTags,
+            singleBoard,
+            boardCells,
+            singleNumberTags,
+            singleLetterTags,
+            ships
+        }
+    })()
+
+    function init() {
+        render.boards()
+        render.ships()
+        setup.buttons()
+        setup.orientationToggle()
     }
 
     function removeShip(ship, clickedRow, clickedColumn) {
@@ -128,7 +275,7 @@ export const DomManager = (function() {
 
         addShipToContainer(shipLength, shipName);
 
-        renderSingleBoard('human');
+        render.singleBoard('human');
 
         if (!GameBoard.areShipsPlaced(board)) {
             disableStartButton();
@@ -157,37 +304,6 @@ export const DomManager = (function() {
         shipsContainer.appendChild(shipContainer);
     }
 
-    function renderSingleNumberTags(player) {
-        const containerSelector = player === 'human' ? '#human .numbers' : '#computer .numbers';
-        const container = document.querySelector(containerSelector);
-
-        if (container) {
-            container.innerHTML = '';
-            for (let index = 0; index < 10; index++) {
-                const numberTag = document.createElement('div');
-                numberTag.classList.add('number-tag');
-                numberTag.textContent = index + 1;
-                container.appendChild(numberTag);
-            }
-        }
-    }
-
-    function renderSingleLetterTags(player) {
-        const containerSelector = player === 'human' ? '#human .letters' : '#computer .letters';
-        const container = document.querySelector(containerSelector);
-
-        if (container) {
-            container.innerHTML = '';
-            const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-            for (let index = 0; index < letters.length; index++) {
-                const letterTag = document.createElement('div');
-                letterTag.classList.add('letter-tag');
-                letterTag.textContent = letters[index];
-                container.appendChild(letterTag);
-            }
-        }
-    }
-
     function resetBoards() {
         const human = Player.getPlayer('human')
         const computer = Player.getPlayer('computer')
@@ -201,37 +317,10 @@ export const DomManager = (function() {
         playerObj.board = GameBoard.create();
     }
 
-    function setupRandomShipPlacementButton() {
-        const button = document.querySelector('.random-placement')
-        const human = Player.getPlayer('human')
-
-        button.addEventListener('click', () => {
-            resetSingleBoard('human')
-            GameBoard.placeShipsRandomly(human.board)
-            renderSingleBoard('human')
-            removeDraggableShips()
-
-            if (GameBoard.areShipsPlaced(human.board)) {
-                enableStartButton()
-            }
-        })
-    }
-
     function placeComputerShips() {
         const computerBoard = Player.getPlayer('computer').board
         GameBoard.placeShipsRandomly(computerBoard)
-        renderSingleBoard('computer')
-    }
-
-    function setupStartButton() {
-        const startButton = document.querySelector('.start-game') 
-        startButton.disabled = true
-
-        startButton.addEventListener('click', () => {
-            placeComputerShips()
-            disableButtons()
-            gameStarted = true
-        })
+        render.singleBoard('computer')
     }
 
     function attack(domElement) {
@@ -245,13 +334,13 @@ export const DomManager = (function() {
         GameBoard.receiveAttack(row, column, computerBoard)
 
         if (GameBoard.isGameOver(computerBoard)) {
-            renderSingleBoard('computer')
+            render.singleBoard('computer')
             gameOver('human')
             return
         }
 
         GameBoard.setCurrentPlayer('computer')
-        renderSingleBoard('computer')
+        render.singleBoard('computer')
 
         setTimeout(() => {
             computerAttack()
@@ -417,13 +506,13 @@ export const DomManager = (function() {
             DomManager.directionMap = directionMap;
     
             if (GameBoard.isGameOver(humanBoard)) {
-                renderSingleBoard('human');
+                render.singleBoard('human');
                 gameOver('computer');
                 return;
             }
     
             GameBoard.setCurrentPlayer('human');
-            renderSingleBoard('human');
+            render.singleBoard('human');
             found = true;
         }
     
@@ -494,48 +583,16 @@ export const DomManager = (function() {
 
     function endGame() {
         resetBoards()
-        renderBoards()
-        renderShips()
+        render.boards()
+        render.ships()
         enableButtons()
 
-        hitQueue = [];
-        directionMap = new Map();
+        hitQueue = []
+        directionMap = new Map()
 
         gameStarted = false
 
         disableStartButton()
-    }
-
-    function renderShips() {
-        const shipSizes = GameBoard.getShipSizes()
-        const shipsContainer = document.querySelector('.ships')
-        shipsContainer.innerHTML = ''
-
-        shipSizes.forEach(size => {
-            const shipContainer = document.createElement('div')
-            shipContainer.classList.add('ship-container')
-            shipContainer.dataset.length = size
-            shipContainer.dataset.name = setShipName(size)
-            shipContainer.draggable = true
-
-            shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
-
-            shipContainer.addEventListener('dragstart', handleDragStart)
-            shipContainer.addEventListener('dragend', handleDragEnd)
-
-            for (let index = 0; index < size; index++) {
-                const shipCell = document.createElement('div')
-                shipCell.classList.add('ship-cell')
-                shipContainer.appendChild(shipCell)
-            }
-
-            shipContainer.addEventListener('dragstart', (e) => {
-                draggedShipLength = parseInt(e.target.dataset.length)
-            })
-
-            shipsContainer.appendChild(shipContainer)
-        })
-
     }
 
     function setShipName(shipLength) {
@@ -599,7 +656,7 @@ export const DomManager = (function() {
 
         if (GameBoard.canBePlaced(row, column, board, ship.length, isHorizontal)) {
             GameBoard.place(row, column, board, ship, isHorizontal)
-            renderSingleBoard('human')
+            render.singleBoard('human')
             draggedShip.remove()
 
             if (GameBoard.areShipsPlaced(board)) {
@@ -642,60 +699,17 @@ export const DomManager = (function() {
         }
     }
 
-    function setupOrientationToggle() {
-        const button = document.querySelector('.direction')
-
-        button.addEventListener('click', (e) => {
-            isHorizontal = !isHorizontal
-            button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
-
-            const shipContainers = document.querySelectorAll('.ship-container')
-            shipContainers.forEach(ship => {
-                ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
-            })
-        })
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key.toLowerCase() === 'r' && !gameStarted) {
-                isHorizontal = !isHorizontal;
-                button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
-
-                const shipContainers = document.querySelectorAll('.ship-container')
-                shipContainers.forEach(ship => {
-                    ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
-                })
-            }
-        });
-    }
-
-    function setupResetButton() {
-        const button = document.querySelector('.reset-board')
-
-        button.addEventListener('click', (e) => {
-            resetSingleBoard('human')
-            renderSingleBoard('human')
-            renderShips()
-        })
-    }
-
     function removeDraggableShips() {
         const shipsContainer = document.querySelector('.ships')
         shipsContainer.innerHTML = ''
     }
 
     return {
-        renderBoards,
-        renderBoardCells,
-        renderSingleBoard,
-        renderSingleNumberTags,
-        renderSingleLetterTags,
-        renderSingleTags,
-        setupRandomShipPlacementButton,
-        setupButtons,
+        render,
+        setup,
         init,
         resetBoards,
         resetSingleBoard,
-        setupStartButton,
         attack,
         gameOver,
         enableButtons,
