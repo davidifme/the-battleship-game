@@ -4,10 +4,26 @@ import { Ship } from "./ship"
 export const GameBoard = (function() {
 
     const shipSizes = [5, 4, 3, 3, 2]
-
     let gameBoard = Array(10).fill().map(() => Array(10).fill(null))
+    let currentPlayer = 'player1'
+    let gameMode = 'single'
 
-    let currentPlayer = 'human'
+    function getCurrentPlayer() {
+        return currentPlayer
+    }
+
+    function setCurrentPlayer(player) {
+        currentPlayer = player
+    }
+
+    function getGameMode() {
+        return gameMode
+    }
+
+    function setGameMode(mode) {
+        gameMode = mode
+        currentPlayer = 'player1'
+    }
 
     function getBoard() {
         return gameBoard
@@ -212,14 +228,6 @@ export const GameBoard = (function() {
         );
     }
 
-    function getCurrentPlayer() {
-        return currentPlayer
-    }
-
-    function setCurrentPlayer(player) {
-        currentPlayer = player
-    }
-
     function printShips(board) {
         const printedShips = new Set();
 
@@ -246,6 +254,8 @@ export const GameBoard = (function() {
         setCurrentPlayer,
         getShipSizes,
         canBePlaced,
+        setGameMode,
+        getGameMode,
         printShips
     }
 })()

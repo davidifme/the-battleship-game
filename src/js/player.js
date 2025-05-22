@@ -1,20 +1,18 @@
 import { GameBoard } from "./gameBoard"
 
 export const Player = (function() {
-
     let players = []
 
-    function create(playerType) {
-
+    function create(playerType, isHuman = true) {
         if (players.length === 2) return
 
         const player = {
             playerType,
-            board: GameBoard.create()
+            board: GameBoard.create(),
+            isHuman
         }
 
         players.push(player)
-
         return player
     }
 
@@ -23,14 +21,7 @@ export const Player = (function() {
     }
 
     function getPlayer(playerType) {
-
-        for (let index = 0; index < players.length; index++) {
-            if (players[index].playerType === playerType) {
-                return players[index]
-            }
-        }
-
-        return null
+        return players.find(player => player.playerType === playerType) || null
     }
 
     return {

@@ -1,0 +1,26 @@
+#game-mode-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+
+    border: none;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 80%;
+
+    transition: transform 0.3s ease-out;
+}
+
+#game-mode-modal::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#game-mode-modal[open] {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.game-mode-content {
+    padding: 20px;
+    text-align: center;
+}

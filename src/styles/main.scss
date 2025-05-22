@@ -4,3 +4,9 @@ body {
 
     margin-top: 50px;
 }
+
+// Hide player 2 buttons on SinglePlayer mode
+.content#computer .buttons,
+.content#computer .ships {
+    visibility: hidden;
+}
