@@ -16,6 +16,18 @@ export const GameBoard = (function() {
         currentPlayer = player
     }
 
+    function toggleCurrentPlayer() {
+        if (gameMode === 'single') {
+            const target = currentPlayer === 'player1' ? 'computer' : 'player1'
+            currentPlayer = target
+        }
+
+        if (gameMode === 'multi') {
+            const target = currentPlayer === 'player1' ? 'player2' : 'player1'
+            currentPlayer = target
+        }
+    }
+
     function getGameMode() {
         return gameMode
     }
@@ -256,6 +268,7 @@ export const GameBoard = (function() {
         canBePlaced,
         setGameMode,
         getGameMode,
+        toggleCurrentPlayer,
         printShips
     }
 })()

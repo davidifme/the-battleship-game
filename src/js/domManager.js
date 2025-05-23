@@ -61,7 +61,8 @@ export const DomManager = (function() {
 
                         if (GameBoard.getCurrentPlayer() === 'player2') {
                             disableButtons()
-                            gameStarted = true  
+                            gameStarted = true
+                            showPassDeviceModal()
                         }
                     })
                 }
@@ -265,6 +266,17 @@ export const DomManager = (function() {
                         if (boardDomElement.dataset.player === 'player2') {
                             cellDomElement.dataset.player = 'player2'
                         }
+
+                        if (gameStarted) {
+                            const currentPlayer = GameBoard.getCurrentPlayer()
+                            const target = currentPlayer === 'player1' ? 'player2' : 'player1'
+                            
+                            if (cellDomElement.dataset.player === target) {
+                                cellDomElement.addEventListener('click', (event) => {
+                                    attack(event.target)
+                                })
+                            }
+                        }
                     }
     
                     if (typeof cell === 'object' && cell !== null && cell !== 'miss') {
@@ -392,36 +404,38 @@ export const DomManager = (function() {
             }
 
             if (GameBoard.getGameMode() === 'multi') {
+                const currentPlayer = GameBoard.getCurrentPlayer()
                 const shipSizes = GameBoard.getShipSizes()
-                const shipsContainer = document.querySelectorAll('.ships')
 
-                shipsContainer.forEach(shipContainer => {
-                    shipContainer.innerHTML = ''
+                let shipsContainer;
+                let shipsContainerId = currentPlayer === 'player1' ? '#human .ships' : '#computer .ships'
 
-                    shipSizes.forEach(size => {
-                        const shipContent = document.createElement('div')
-                        shipContent.classList.add('ship-container')
-                        shipContent.dataset.length = size
-                        shipContent.dataset.name = setShipName(size)
-                        shipContent.draggable = true
-            
-                        shipContent.style.flexDirection = isHorizontal ? 'row' : 'column';
-            
-                        shipContent.addEventListener('dragstart', handleDragStart)
-                        shipContent.addEventListener('dragend', handleDragEnd)
-            
-                        for (let index = 0; index < size; index++) {
-                            const shipCell = document.createElement('div')
-                            shipCell.classList.add('ship-cell')
-                            shipContent.appendChild(shipCell)
-                        }
-            
-                        shipContent.addEventListener('dragstart', (e) => {
-                            draggedShipLength = parseInt(e.target.dataset.length)
-                        })
-            
-                        shipContainer.appendChild(shipContent)
+                shipsContainer = document.querySelector(shipsContainerId)
+                shipsContainer.innerHTML = ''
+        
+                shipSizes.forEach(size => {
+                    const shipContainer = document.createElement('div')
+                    shipContainer.classList.add('ship-container')
+                    shipContainer.dataset.length = size
+                    shipContainer.dataset.name = setShipName(size)
+                    shipContainer.draggable = true
+        
+                    shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+        
+                    shipContainer.addEventListener('dragstart', handleDragStart)
+                    shipContainer.addEventListener('dragend', handleDragEnd)
+        
+                    for (let index = 0; index < size; index++) {
+                        const shipCell = document.createElement('div')
+                        shipCell.classList.add('ship-cell')
+                        shipContainer.appendChild(shipCell)
+                    }
+        
+                    shipContainer.addEventListener('dragstart', (e) => {
+                        draggedShipLength = parseInt(e.target.dataset.length)
                     })
+        
+                    shipsContainer.appendChild(shipContainer)
                 })
             }
         }
@@ -614,7 +628,6 @@ export const DomManager = (function() {
         const modalTitle = document.querySelector('.pass-device-title')
 
         const player = GameBoard.getCurrentPlayer()
-        const target = player === 'player1' ? 'player2' : 'player1'
         const targetName = player === 'player1' ? 'Player 2' : 'Player 1'
         modalTitle.textContent = `Pass the device to the ${targetName}.`
 
@@ -647,6 +660,8 @@ export const DomManager = (function() {
             opponentGameBoardContent.style.visibility = 'visible'
             opponentButtons.style.visibility = 'visible'
             opponentShips.style.visibility = 'visible'
+
+            GameBoard.toggleCurrentPlayer()
         }
 
         modal.addEventListener('keydown', (event) => {
@@ -657,9 +672,8 @@ export const DomManager = (function() {
 
         continueButton.addEventListener('click', (e) => {
             modal.close()
-            render.boards()
             toggleContentView()
-            GameBoard.setCurrentPlayer(target)
+            render.boards()
         })
 
         modal.showModal()
@@ -707,6 +721,7 @@ export const DomManager = (function() {
 
             render.singleBoard(target)
             showPassDeviceModal()
+            GameBoard.toggleCurrentPlayer()
         }
     }
 
