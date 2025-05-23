@@ -757,13 +757,21 @@ export const DomManager = (function() {
                 gameOver('player1')
                 return
             }
+
+            // Check if the attack was a hit (cell is an object) or a miss (cell is 'miss')
+            const cell = computerBoard[row][column]
+            const wasHit = typeof cell === 'object' && cell !== null
     
-            GameBoard.setCurrentPlayer('computer')
-            render.singleBoard('computer')
-    
-            setTimeout(() => {
-                computerAttack()
-            }, 350);
+            if (!wasHit) {
+                GameBoard.setCurrentPlayer('computer')
+                render.singleBoard('computer')
+        
+                setTimeout(() => {
+                    computerAttack()
+                }, 350);
+            } else {
+                render.singleBoard('computer')
+            }
         }
 
         if (GameBoard.getGameMode() === 'multi') {
@@ -782,8 +790,15 @@ export const DomManager = (function() {
                 return
             }
 
+            // Check if the attack was a hit (cell is an object) or a miss (cell is 'miss')
+            const cell = targetPlayer.board[row][column]
+            const wasHit = typeof cell === 'object' && cell !== null
+
             render.singleBoard(target)
-            showPassDeviceModal()
+            
+            if (!wasHit) {
+                showPassDeviceModal()
+            }
         }
     }
 
@@ -876,89 +891,109 @@ export const DomManager = (function() {
             return null;
         }
     
-        while (!found && attempts < maxAttempts) {
-            let row, col, currentShip;
-    
-            // Hunting mode: Prioritize directional cells
-            if (hitQueue.length > 0) {
-                ({ row, col, ship: currentShip } = hitQueue[0]);
-                let direction = directionMap.get(currentShip) || inferDirection(currentShip);
-    
-                // Update directionMap if direction is inferred
-                if (direction && !directionMap.has(currentShip)) {
-                    directionMap.set(currentShip, direction);
-                }
-    
-                let validCell = false;
-    
-                // Try directional cells if direction is known
-                if (direction) {
-                    const directionalCells = getDirectionalCells(currentShip, hitQueue);
-                    if (directionalCells.length > 0) {
-                        [row, col] = directionalCells[0];
-                        validCell = true;
+        function makeAttack() {
+            while (attempts < maxAttempts) {
+                let row, col, currentShip;
+        
+                // Hunting mode: Prioritize directional cells
+                if (hitQueue.length > 0) {
+                    ({ row, col, ship: currentShip } = hitQueue[0]);
+                    let direction = directionMap.get(currentShip) || inferDirection(currentShip);
+        
+                    // Update directionMap if direction is inferred
+                    if (direction && !directionMap.has(currentShip)) {
+                        directionMap.set(currentShip, direction);
+                    }
+        
+                    let validCell = false;
+        
+                    // Try directional cells if direction is known
+                    if (direction) {
+                        const directionalCells = getDirectionalCells(currentShip, hitQueue);
+                        if (directionalCells.length > 0) {
+                            [row, col] = directionalCells[0];
+                            validCell = true;
+                        }
+                    }
+        
+                    // Fallback to adjacent cells only if no direction is known
+                    if (!validCell && !direction) {
+                        const adjacentCells = getAdjacentCells(row, col);
+                        if (adjacentCells.length > 0) {
+                            [row, col] = adjacentCells[0];
+                            validCell = true;
+                        }
+                    }
+        
+                    if (!validCell) {
+                        // No valid cells; try next hit in queue
+                        hitQueue.shift();
+                        attempts++;
+                        continue;
+                    }
+                } else {
+                    // Random mode
+                    row = Math.floor(Math.random() * 10);
+                    col = Math.floor(Math.random() * 10);
+                    if (!isValidCell(row, col)) {
+                        attempts++;
+                        continue;
                     }
                 }
-    
-                // Fallback to adjacent cells only if no direction is known
-                if (!validCell && !direction) {
-                    const adjacentCells = getAdjacentCells(row, col);
-                    if (adjacentCells.length > 0) {
-                        [row, col] = adjacentCells[0];
-                        validCell = true;
-                    }
+        
+                // Perform the attack
+                GameBoard.receiveAttack(row, col, humanBoard);
+                const cell = humanBoard[row][col];
+        
+                // Check if attack hit a ship
+                if (typeof cell === 'object' && cell !== null) {
+                    hitQueue.push({ row, col, ship: cell });
                 }
-    
-                if (!validCell) {
-                    // No valid cells; try next hit in queue
-                    hitQueue.shift();
-                    attempts++;
-                    continue;
+        
+                // If ship is sunk, clear its state
+                if (currentShip && currentShip.isSunk()) {
+                    hitQueue = hitQueue.filter(hit => hit.ship !== currentShip);
+                    directionMap.delete(currentShip);
                 }
-            } else {
-                // Random mode
-                row = Math.floor(Math.random() * 10);
-                col = Math.floor(Math.random() * 10);
-                if (!isValidCell(row, col)) {
-                    attempts++;
-                    continue;
+        
+                // Update state
+                DomManager.hitQueue = hitQueue;
+                DomManager.directionMap = directionMap;
+        
+                if (GameBoard.isGameOver(humanBoard)) {
+                    render.singleBoard('player1');
+                    gameOver('computer');
+                    return;
                 }
-            }
-    
-            // Perform the attack
-            GameBoard.receiveAttack(row, col, humanBoard);
-            const cell = humanBoard[row][col];
-    
-            // Check if attack hit a ship
-            if (typeof cell === 'object' && cell !== null) {
-                hitQueue.push({ row, col, ship: cell });
-            }
-    
-            // If ship is sunk, clear its state
-            if (currentShip && currentShip.isSunk()) {
-                hitQueue = hitQueue.filter(hit => hit.ship !== currentShip);
-                directionMap.delete(currentShip);
-            }
-    
-            // Update state
-            DomManager.hitQueue = hitQueue;
-            DomManager.directionMap = directionMap;
-    
-            if (GameBoard.isGameOver(humanBoard)) {
+        
+                // Check if the attack was a hit
+                const wasHit = typeof cell === 'object' && cell !== null;
+                
+                if (!wasHit) {
+                    // If it was a miss, end computer's turn
+                    GameBoard.setCurrentPlayer('player1');
+                    render.singleBoard('player1');
+                    return;
+                }
+                
+                // If it was a hit, continue computer's turn after a delay
                 render.singleBoard('player1');
-                gameOver('computer');
+                setTimeout(() => {
+                    makeAttack();
+                }, 850);
                 return;
             }
-    
-            GameBoard.setCurrentPlayer('player1');
-            render.singleBoard('player1');
-            found = true;
+        
+            if (attempts >= maxAttempts) {
+                console.warn('Computer could not find a valid move after maximum attempts');
+                GameBoard.setCurrentPlayer('player1');
+            }
         }
-    
-        if (!found) {
-            console.warn('Computer could not find a valid move after maximum attempts');
-            GameBoard.setCurrentPlayer('player1');
-        }
+        
+        // Initial delay before first attack
+        setTimeout(() => {
+            makeAttack();
+        }, 350);
     }
 
     function enableButtons() {
