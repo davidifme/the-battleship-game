@@ -24,3 +24,14 @@
     padding: 20px;
     text-align: center;
 }
+
+.game-mode-title {
+    font-size: 45px;
+    margin-bottom: 20px;
+}
+
+.game-mode-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}

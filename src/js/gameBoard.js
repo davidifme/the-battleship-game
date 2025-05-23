@@ -3,8 +3,7 @@ import { Ship } from "./ship"
 
 export const GameBoard = (function() {
 
-    // const shipSizes = [5, 4, 3, 3, 2]
-    const shipSizes = [10]
+    const shipSizes = [5, 4, 3, 3, 2]
     let gameBoard = Array(10).fill().map(() => Array(10).fill(null))
     let currentPlayer = 'player1'
     let gameMode = 'single'
