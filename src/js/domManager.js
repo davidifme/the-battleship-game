@@ -737,6 +737,23 @@ export const DomManager = (function() {
         modal.showModal()
     }
 
+    function showPopup(element, type) {
+        const popup = document.createElement('div');
+        popup.classList.add(`${type}-popup`);
+        popup.textContent = type === 'hit' ? 'HIT!' : 'MISS!';
+        
+        const rect = element.getBoundingClientRect();
+        popup.style.left = `${rect.left + rect.width / 2}px`;
+        popup.style.top = `${rect.top - 30}px`;
+        
+        document.body.appendChild(popup);
+        
+        // Remove the popup after animation completes
+        popup.addEventListener('animationend', () => {
+            popup.remove();
+        });
+    }
+
     function attack(domElement) {
         const state = getCurrentPlayerState();
         if (!state.gameStarted) return
@@ -761,6 +778,9 @@ export const DomManager = (function() {
             // Check if the attack was a hit (cell is an object) or a miss (cell is 'miss')
             const cell = computerBoard[row][column]
             const wasHit = typeof cell === 'object' && cell !== null
+            
+            // Show hit/miss popup
+            showPopup(domElement, wasHit ? 'hit' : 'miss')
     
             if (!wasHit) {
                 GameBoard.setCurrentPlayer('computer')
@@ -793,6 +813,9 @@ export const DomManager = (function() {
             // Check if the attack was a hit (cell is an object) or a miss (cell is 'miss')
             const cell = targetPlayer.board[row][column]
             const wasHit = typeof cell === 'object' && cell !== null
+
+            // Show hit/miss popup
+            showPopup(domElement, wasHit ? 'hit' : 'miss')
 
             render.singleBoard(target)
             
@@ -944,6 +967,14 @@ export const DomManager = (function() {
                 // Perform the attack
                 GameBoard.receiveAttack(row, col, humanBoard);
                 const cell = humanBoard[row][col];
+        
+                // Get the DOM element for the attacked cell
+                const cellElement = document.querySelector(`#human-board .cell[data-row="${row}"][data-column="${col}"]`);
+                
+                // Show hit/miss popup
+                if (cellElement) {
+                    showPopup(cellElement, typeof cell === 'object' && cell !== null ? 'hit' : 'miss');
+                }
         
                 // Check if attack hit a ship
                 if (typeof cell === 'object' && cell !== null) {
