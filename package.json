@@ -47,5 +47,5 @@
     "vite-plugin-compression": "^0.5.1",
     "vitest": "^3.0.7"
   },
-  "homepage": "https://<your-github-username>.github.io/<repository-name>"
+  "homepage": "https://davidifme.github.io/the-battleship-game"
 }
