@@ -3,14 +3,40 @@ import { Player } from "./player"
 import { Ship } from "./ship";
 
 export const DomManager = (function() {
-    let gameStarted = false
-    let draggedShipLength;
-    let draggedShipName;
-    let toggle3 = true
-    let isHorizontal = true
-    let highlightedCells = new Set();
+    const playerStates = {
+        player1: {
+            gameStarted: false,
+            draggedShipLength: null,
+            draggedShipName: null,
+            toggle3: true,
+            isHorizontal: true,
+            highlightedCells: new Set(),
+        },
+        player2: {
+            gameStarted: false,
+            draggedShipLength: null,
+            draggedShipName: null,
+            toggle3: true,
+            isHorizontal: true,
+            highlightedCells: new Set(),
+        },
+        computer: {
+            gameStarted: false,
+            draggedShipLength: null,
+            draggedShipName: null,
+            toggle3: true,
+            isHorizontal: true,
+            highlightedCells: new Set(),
+        }
+    };
+
     let hitQueue = [] // [{ row, col, ship }]
     let directionMap = new Map() // Map<ship, 'horizontal'|'vertical'|null>
+
+    function getCurrentPlayerState() {
+        const currentPlayer = GameBoard.getCurrentPlayer();
+        return playerStates[currentPlayer];
+    }
 
     const setup = (function() {
         function buttons() {
@@ -41,27 +67,30 @@ export const DomManager = (function() {
 
         function startButton() {
             const startButtons = document.querySelectorAll('.start-game') 
-
+    
             startButtons.forEach(button => {
                 button.disabled = true
-
+    
                 if (GameBoard.getGameMode() === 'single') {
                     button.addEventListener('click', () => {
                         placeComputerShips()
                         disableButtons()
-                        gameStarted = true
+                        playerStates.player1.gameStarted = true
                     })
                 }
-
+    
                 if ((GameBoard.getGameMode() === 'multi')) {
                     button.addEventListener('click', () => {
-                        if (GameBoard.getCurrentPlayer() === 'player1') {
+                        const currentPlayer = GameBoard.getCurrentPlayer();
+                        const state = playerStates[currentPlayer];
+                        
+                        if (currentPlayer === 'player1') {
                             showPassDeviceModal()
                         }
-
-                        if (GameBoard.getCurrentPlayer() === 'player2') {
+    
+                        if (currentPlayer === 'player2') {
                             disableButtons()
-                            gameStarted = true
+                            state.gameStarted = true
                             showPassDeviceModal()
                         }
                     })
@@ -71,27 +100,29 @@ export const DomManager = (function() {
 
         function orientationToggle() {
             const buttons = document.querySelectorAll('.direction')
-
+    
             buttons.forEach(button => {
                 button.addEventListener('click', (e) => {
-                    isHorizontal = !isHorizontal
-                    button.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical'
-        
+                    const state = getCurrentPlayerState();
+                    state.isHorizontal = !state.isHorizontal;
+                    button.textContent = state.isHorizontal ? 'Horizontal' : 'Vertical'
+            
                     const shipContainers = document.querySelectorAll('.ship-container')
                     shipContainers.forEach(ship => {
-                        ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
+                        ship.style.flexDirection = state.isHorizontal ? 'row' : 'column'
                     })
                 })
             })
-    
+        
             document.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'r' && !gameStarted) {
-                    isHorizontal = !isHorizontal;
-                    buttons.forEach(btn => btn.textContent = isHorizontal === true ? 'Horizontal' : 'Vertical')
-    
+                if (e.key.toLowerCase() === 'r' && !getCurrentPlayerState().gameStarted) {
+                    const state = getCurrentPlayerState();
+                    state.isHorizontal = !state.isHorizontal;
+                    buttons.forEach(btn => btn.textContent = state.isHorizontal ? 'Horizontal' : 'Vertical')
+        
                     const shipContainers = document.querySelectorAll('.ship-container')
                     shipContainers.forEach(ship => {
-                        ship.style.flexDirection = isHorizontal === true ? 'row' : 'column'
+                        ship.style.flexDirection = state.isHorizontal ? 'row' : 'column'
                     })
                 }
             });
@@ -216,7 +247,6 @@ export const DomManager = (function() {
         }
         
         function boardCells(domElement, board) {
-    
             const boardDomElement = domElement
             boardDomElement.innerHTML = ''
     
@@ -267,7 +297,8 @@ export const DomManager = (function() {
                             cellDomElement.dataset.player = 'player2'
                         }
 
-                        if (gameStarted) {
+                        const state = getCurrentPlayerState();
+                        if (state.gameStarted) {
                             const currentPlayer = GameBoard.getCurrentPlayer()
                             const target = currentPlayer === 'player1' ? 'player2' : 'player1'
                             
@@ -283,7 +314,6 @@ export const DomManager = (function() {
                         const ship = board[row][column]
     
                         if (boardDomElement.id === 'human-board' || boardDomElement.dataset.player === 'player2') {
-
                             if (GameBoard.getGameMode() === 'multi') {
                                 const currentPlayer = GameBoard.getCurrentPlayer()
                                 const target = currentPlayer === 'player1' ? 'player2' : 'player1'
@@ -292,7 +322,8 @@ export const DomManager = (function() {
                                     cellDomElement.classList.add('ship')
 
                                     cellDomElement.addEventListener('click', () => {
-                                        if (!gameStarted) {
+                                        const state = getCurrentPlayerState();
+                                        if (!state.gameStarted) {
                                             removeShip(ship, row, column);
                                         }
                                     })
@@ -303,7 +334,8 @@ export const DomManager = (function() {
                                 cellDomElement.classList.add('ship')
 
                                 cellDomElement.addEventListener('click', () => {
-                                    if (!gameStarted) {
+                                    const state = getCurrentPlayerState();
+                                    if (!state.gameStarted) {
                                         removeShip(ship, row, column);
                                     }
                                 })
@@ -384,7 +416,8 @@ export const DomManager = (function() {
                     shipContainer.dataset.name = setShipName(size)
                     shipContainer.draggable = true
         
-                    shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+                    const state = getCurrentPlayerState();
+                    shipContainer.style.flexDirection = state.isHorizontal ? 'row' : 'column';
         
                     shipContainer.addEventListener('dragstart', handleDragStart)
                     shipContainer.addEventListener('dragend', handleDragEnd)
@@ -420,7 +453,8 @@ export const DomManager = (function() {
                     shipContainer.dataset.name = setShipName(size)
                     shipContainer.draggable = true
         
-                    shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+                    const state = getCurrentPlayerState();
+                    shipContainer.style.flexDirection = state.isHorizontal ? 'row' : 'column';
         
                     shipContainer.addEventListener('dragstart', handleDragStart)
                     shipContainer.addEventListener('dragend', handleDragEnd)
@@ -451,12 +485,22 @@ export const DomManager = (function() {
         }
     })()
 
+    function startMultiPlayerGame() {
+        if (GameBoard.areShipsPlaced(Player.getPlayer('player1').board) === false ||
+            GameBoard.areShipsPlaced(Player.getPlayer('player2').board) === false) {
+                return
+            }
+
+        
+    }
+
     function setShipName(shipLength) {
+        const state = getCurrentPlayerState();
         if (shipLength === 5) return 'Carrier';
         if (shipLength === 4) return 'Battleship';
         if (shipLength === 3) {
-            const name = toggle3 ? 'Destroyer' : 'Submarine';
-            toggle3 = !toggle3;
+            const name = state.toggle3 ? 'Destroyer' : 'Submarine';
+            state.toggle3 = !state.toggle3;
             return name;
         }
         if (shipLength === 2) return 'Patrol';
@@ -548,7 +592,8 @@ export const DomManager = (function() {
             shipContainer.dataset.name = name;
             shipContainer.draggable = true;
     
-            shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+            const state = getCurrentPlayerState();
+            shipContainer.style.flexDirection = state.isHorizontal ? 'row' : 'column';
     
             shipContainer.addEventListener('dragstart', handleDragStart);
             shipContainer.addEventListener('dragend', handleDragEnd);
@@ -579,7 +624,10 @@ export const DomManager = (function() {
             shipContainer.dataset.length = length;
             shipContainer.dataset.name = name;
             shipContainer.draggable = true;
-            shipContainer.style.flexDirection = isHorizontal ? 'row' : 'column';
+
+            const state = getCurrentPlayerState();
+            shipContainer.style.flexDirection = state.isHorizontal ? 'row' : 'column';
+
             shipContainer.addEventListener('dragstart', handleDragStart);
             shipContainer.addEventListener('dragend', handleDragEnd);
 
@@ -595,30 +643,30 @@ export const DomManager = (function() {
 
     function resetBoards() {
         if (GameBoard.getGameMode() === 'single') {
-            let humanBoard = Player.getPlayer('player1').board
-            let computerBoard = Player.getPlayer('computer').board
+            const human = Player.getPlayer('player1')
+            const computer = Player.getPlayer('computer')
     
-            humanBoard = GameBoard.create()
-            computerBoard = GameBoard.create()
+            human.board = GameBoard.create()
+            computer.board = GameBoard.create()
         }
 
         if (GameBoard.getGameMode() === 'multi') {
-            let player1board = Player.getPlayer('player1').board
-            let player2board = Player.getPlayer('player2').board
+            const player1 = Player.getPlayer('player1')
+            const player2 = Player.getPlayer('player2')
 
-            player1board = GameBoard.create()
-            player2board = GameBoard.create()
+            player1.board = GameBoard.create()
+            player2.board = GameBoard.create()
         }
     }
 
     function resetSingleBoard(player) {
-        let playerBoard = Player.getPlayer(player).board
-        playerBoard = GameBoard.create();
+        const playerObject = Player.getPlayer(player)
+        playerObject.board = GameBoard.create();
     }
 
     function placeComputerShips() {
-        const computerBoard = Player.getPlayer('computer').board
-        GameBoard.placeShipsRandomly(computerBoard)
+        const computer = Player.getPlayer('computer');
+        GameBoard.placeShipsRandomly(computer.board);
         render.singleBoard('computer')
     }
 
@@ -674,13 +722,15 @@ export const DomManager = (function() {
             modal.close()
             toggleContentView()
             render.boards()
+            console.log(GameBoard.getCurrentPlayer())
         })
 
         modal.showModal()
     }
 
     function attack(domElement) {
-        if (!gameStarted) return
+        const state = getCurrentPlayerState();
+        if (!state.gameStarted) return
 
         if (GameBoard.getGameMode() === 'single') {
             if (GameBoard.getCurrentPlayer() !== 'player1') return
@@ -734,8 +784,8 @@ export const DomManager = (function() {
         let found = false;
     
         // Persistent state
-        let hitQueue = DomManager.hitQueue || []; // [{ row, col, ship }]
-        let directionMap = DomManager.directionMap || new Map(); // Map<ship, 'horizontal'|'vertical'|null>
+        if (!hitQueue) hitQueue = []
+        if (!directionMap) directionMap = new Map()
     
         // Helper: Check if a cell is valid for attack
         function isValidCell(row, col) {
@@ -911,13 +961,13 @@ export const DomManager = (function() {
     }
 
     function enableStartButton() {
-        const startButton = document.querySelector('.start-game') 
-        startButton.disabled = false
+        const startButtons = document.querySelectorAll('.start-game')
+        startButtons.forEach(button => button.disabled = false)
     }
 
     function disableStartButton() {
-        const startButton = document.querySelector('.start-game') 
-        startButton.disabled = true
+        const startButtons = document.querySelectorAll('.start-game') 
+        startButtons.forEach(button => button.disabled = true)
     }
 
     function gameOver(player) {
@@ -975,36 +1025,49 @@ export const DomManager = (function() {
         enableButtons()
         hitQueue = []
         directionMap = new Map()
-        gameStarted = false
+        
+        // Reset all player states
+        Object.values(playerStates).forEach(state => {
+            state.gameStarted = false
+            state.draggedShipLength = null
+            state.draggedShipName = null
+            state.toggle3 = true
+            state.isHorizontal = true
+            state.highlightedCells.clear()
+        })
+        
         disableStartButton()
     }
 
     function handleDragStart(e) {
         e.target.style.opacity = '0.5'
-        draggedShipLength = parseInt(e.target.dataset.length)
-        draggedShipName = e.target.dataset.name
+        const state = getCurrentPlayerState();
+        state.draggedShipLength = parseInt(e.target.dataset.length)
+        state.draggedShipName = e.target.dataset.name
     }
 
     function handleDragEnd(e) {
         e.target.style.opacity = '1'
         clearHighlights()
-        draggedShipLength = null
+        const state = getCurrentPlayerState();
+        state.draggedShipLength = null
+        state.draggedShipName = null
     }
 
     function handleDragEnter(e) {
         e.preventDefault()
-
-        if (gameStarted) return
-
+        const state = getCurrentPlayerState();
+        if (state.gameStarted) return
         highlightCells(e.target)
     }
 
     function handleDragLeave(e) {
         e.preventDefault()
-        if (gameStarted) return
+        const state = getCurrentPlayerState();
+        if (state.gameStarted) return
 
         const relatedTarget = e.relatedTarget;
-        if (!relatedTarget || !highlightedCells.has(relatedTarget)) {
+        if (!relatedTarget || !state.highlightedCells.has(relatedTarget)) {
             clearHighlights();
         }
     }
@@ -1015,16 +1078,17 @@ export const DomManager = (function() {
 
     function handleDrop(e) {
         e.preventDefault()
-        if (gameStarted) return
+        const state = getCurrentPlayerState();
+        if (state.gameStarted) return
 
         const row = parseInt(e.target.dataset.row)
         const column = parseInt(e.target.dataset.column)
         const board = Player.getPlayer(GameBoard.getCurrentPlayer()).board
-        const ship = Ship.create(draggedShipLength)
-        const draggedShip = document.querySelector(`[data-name="${draggedShipName}"]`)
+        const ship = Ship.create(state.draggedShipLength)
+        const draggedShip = document.querySelector(`[data-name="${state.draggedShipName}"]`)
 
-        if (GameBoard.canBePlaced(row, column, board, ship.length, isHorizontal)) {
-            GameBoard.place(row, column, board, ship, isHorizontal)
+        if (GameBoard.canBePlaced(row, column, board, ship.length, state.isHorizontal)) {
+            GameBoard.place(row, column, board, ship, state.isHorizontal)
             render.singleBoard(GameBoard.getCurrentPlayer())
             draggedShip.remove()
 
@@ -1054,7 +1118,8 @@ export const DomManager = (function() {
 
     function highlightCells(target) {
         clearHighlights();
-        if (!draggedShipLength || gameStarted) return;
+        const state = getCurrentPlayerState();
+        if (!state.draggedShipLength || state.gameStarted) return;
 
         const row = parseInt(target.dataset.row);
         const column = parseInt(target.dataset.column);
@@ -1062,11 +1127,11 @@ export const DomManager = (function() {
 
         const id = GameBoard.getCurrentPlayer() === 'player1' ? '#human-board' : '#computer-board'
 
-        const canPlace = GameBoard.canBePlaced(row, column, board, draggedShipLength, isHorizontal);
+        const canPlace = GameBoard.canBePlaced(row, column, board, state.draggedShipLength, state.isHorizontal);
 
-        for (let i = 0; i < draggedShipLength; i++) {
-            const cellRow = isHorizontal ? row : row + i;
-            const cellCol = isHorizontal ? column + i : column;
+        for (let i = 0; i < state.draggedShipLength; i++) {
+            const cellRow = state.isHorizontal ? row : row + i;
+            const cellCol = state.isHorizontal ? column + i : column;
             
             if (cellRow >= 0 && cellRow < 10 && cellCol >= 0 && cellCol < 10) {
                 const cell = document.querySelector(
@@ -1074,7 +1139,7 @@ export const DomManager = (function() {
                 );
                 if (cell) {
                     cell.classList.add(canPlace ? 'valid' : 'invalid');
-                    highlightedCells.add(cell);
+                    state.highlightedCells.add(cell);
                 }
             }
         }
