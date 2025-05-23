@@ -503,14 +503,15 @@ export const DomManager = (function() {
 
     function setShipName(shipLength) {
         const state = getCurrentPlayerState();
-        if (shipLength === 5) return 'Carrier';
-        if (shipLength === 4) return 'Battleship';
+        const player = GameBoard.getCurrentPlayer();
+        if (shipLength === 5) return `${player}-Carrier`;
+        if (shipLength === 4) return `${player}-Battleship`;
         if (shipLength === 3) {
             const name = state.toggle3 ? 'Destroyer' : 'Submarine';
             state.toggle3 = !state.toggle3;
-            return name;
+            return `${player}-${name}`;
         }
-        if (shipLength === 2) return 'Patrol';
+        if (shipLength === 2) return `${player}-Patrol`;
     }
 
     function getShipNameFromLength(length) {
