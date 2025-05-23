@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Homepage</title>
+    <link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+			rel="stylesheet"
+		/>
+		<link rel="icon" type="image/png" href="/favicon.png" />
+    <script type="module" crossorigin src="/assets/index-B4EWvy8d.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Bk9xXgRv.css">
+  </head>
+  <body>
+    <div class="content" id="human">
+      <div class="title-container">
+        <h1>Player 1 Fleet</h1>
+      </div>
+      <div class="gameBoard-content">
+          <div class="numbers-container">
+            <div class="empty"></div>
+            <div class="numbers"></div>
+          </div>
+
+          <div class="letters"></div>
+          <div class="board" id="human-board"></div>
+      </div>
+
+      <div class="buttons">
+        <button class="random-placement">Auto Placement</button>
+        <button class="direction">Horizontal</button>
+        <button class="reset-board">Reset</button>
+        <button class="start-game">Start</button>
+      </div>
+
+      <div class="ships"></div>
+    </div>
+
+    <div class="content" id="computer">
+      <div class="title-container">
+        <h1>Computer Fleet</h1>
+      </div>
+      <div class="gameBoard-content">
+          <div class="numbers-container">
+            <div class="empty"></div>
+            <div class="numbers"></div>
+          </div>
+
+          <div class="letters"></div>
+          <div class="board" id="computer-board" data-player="computer"></div>
+      </div>
+
+      <div class="buttons">
+        <button class="random-placement">Auto Placement</button>
+        <button class="direction">Horizontal</button>
+        <button class="reset-board">Reset</button>
+        <button class="start-game">Start</button>
+      </div>
+
+      <div class="ships" data-player="player2"></div>
+    </div>
+
+    <dialog id="pass-device-modal">
+      <div class="pass-device-content">
+        <h2 class="pass-device-title"></h2>
+        <div class="pass-device-buttons">
+          <button id="pass-device-continue">Continue</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="game-mode-modal">
+      <div class="game-mode-content">
+        <h2 class="game-mode-title">Game Mode</h2>
+        <div class="game-mode-buttons">
+          <button id="single-player">SinglePlayer</button>
+          <button id="multi-player">MultiPlayer</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="gameOverModal">
+      <div class="modal-content">
+        <h2 class="modal-title"></h2>
+        <button id="modal-close">New Game</button>
+      </div>
+    </dialog>
+  </body>
+</html>
