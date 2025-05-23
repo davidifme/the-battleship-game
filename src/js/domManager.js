@@ -993,22 +993,21 @@ export const DomManager = (function() {
             modalTitle.classList.remove('win')
         }
 
-        if (GameBoard.getGameMode === 'single') {
+        if (GameBoard.getGameMode() === 'single') {
             if (player === 'player1') {
-                modalTitle.textContent = 'You won!'
+                modalTitle.textContent = 'You win!'
                 modalTitle.classList.add('win')
             }
     
             if (player === 'computer') {
-                modalTitle.textContent = 'You lost :c'
+                modalTitle.textContent = 'You lose :c'
             }
         }
 
-        if (GameBoard.getGameMode === 'multi') {
+        if (GameBoard.getGameMode() === 'multi') {
             const winner = player === 'player1' ? 'Player 1' : 'Player 2'
             modalTitle.textContent = `${winner} wins!`
             modalTitle.classList.add('win')
-
         }
 
         addSafeEventListener(modal, 'click', (event) => {
@@ -1031,14 +1030,23 @@ export const DomManager = (function() {
     }
 
     function endGame() {
+        // Reset game boards
         resetBoards()
+        
+        // Reset game state
+        GameBoard.setCurrentPlayer('player1')
+        
+        // Reset UI elements
         render.boards()
         render.ships()
-        enableButtons()
+        enableButtons()        
+        disableStartButton()
+        
+        // Reset computer AI state
         hitQueue = []
         directionMap = new Map()
         
-        // Reset all player states
+        // Reset player states
         Object.values(playerStates).forEach(state => {
             state.gameStarted = false
             state.draggedShipLength = null
@@ -1048,7 +1056,27 @@ export const DomManager = (function() {
             state.highlightedCells.clear()
         })
         
-        disableStartButton()
+        // Reset visibility for multiplayer mode
+        if (GameBoard.getGameMode() === 'multi') {
+            const player1Content = document.querySelector('#human')
+            const player2Content = document.querySelector('#computer')
+            
+            player1Content.style.visibility = 'visible'
+            player2Content.style.visibility = 'hidden'
+            
+            const player1GameBoardContent = document.querySelector('#human .gameBoard-content')
+            const player1Buttons = document.querySelector('#human .buttons')
+            const player1Ships = document.querySelector('#human .ships')
+            const player1Title = document.querySelector('#human .title-container')
+            
+            player1GameBoardContent.style.visibility = 'visible'
+            player1Buttons.style.visibility = 'visible'
+            player1Ships.style.visibility = 'visible'
+            player1Title.style.visibility = 'visible'
+        }
+        
+        // Show game mode modal to start new game
+        showGameModeModal()
     }
 
     function handleDragStart(e) {
