@@ -818,14 +818,16 @@ export const DomManager = (function() {
             if (!direction || shipHits.length === 0) return [];
     
             let cells = [];
+            const shipLength = ship.length;
     
             if (direction === 'horizontal') {
                 const row = shipHits[0].row;
                 const cols = shipHits.map(hit => hit.col);
                 const minCol = Math.min(...cols);
                 const maxCol = Math.max(...cols);
-                // Extend up to max ship length (5 for Carrier)
-                for (let col = minCol - 5; col <= maxCol + 5; col++) {
+                
+                // Only check cells that could be part of the ship
+                for (let col = minCol - 1; col <= maxCol + 1; col++) {
                     if (col >= 0 && col < 10 && isValidCell(row, col)) {
                         cells.push([row, col]);
                     }
@@ -835,18 +837,15 @@ export const DomManager = (function() {
                 const rows = shipHits.map(hit => hit.row);
                 const minRow = Math.min(...rows);
                 const maxRow = Math.max(...rows);
-                for (let row = minRow - 5; row <= maxRow + 5; row++) {
+                
+                // Only check cells that could be part of the ship
+                for (let row = minRow - 1; row <= maxRow + 1; row++) {
                     if (row >= 0 && row < 10 && isValidCell(row, col)) {
                         cells.push([row, col]);
                     }
                 }
             }
     
-            // Shuffle cells to avoid predictable order
-            for (let i = cells.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [cells[i], cells[j]] = [cells[j], cells[i]];
-            }
             return cells;
         }
     
