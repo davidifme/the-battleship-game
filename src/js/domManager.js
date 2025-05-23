@@ -747,8 +747,10 @@ export const DomManager = (function() {
             const row = parseInt(domElement.dataset.row)
             const column = parseInt(domElement.dataset.column)
             const computerBoard = Player.getPlayer('computer').board
-    
-            GameBoard.receiveAttack(row, column, computerBoard)
+
+            if (GameBoard.receiveAttack(row, column, computerBoard) === false) {
+                return
+            }
     
             if (GameBoard.isGameOver(computerBoard)) {
                 render.singleBoard('computer')
@@ -770,7 +772,9 @@ export const DomManager = (function() {
             const target = GameBoard.getCurrentPlayer() === 'player1' ? 'player2' : 'player1'
             const targetPlayer = Player.getPlayer(target)
 
-            GameBoard.receiveAttack(row, column, targetPlayer.board)
+            if (GameBoard.receiveAttack(row, column, targetPlayer.board) === false) {
+                return
+            }
 
             if (GameBoard.isGameOver(targetPlayer.board)) {
                 render.singleBoard(target)

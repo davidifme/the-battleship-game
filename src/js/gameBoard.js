@@ -134,12 +134,12 @@ export const GameBoard = (function() {
 
         // The specified row or column is not out of bounds
         if (row < 0 || row >= board.length || column < 0 || column >= board[0].length) {
-            return
+            return false
         }
 
         // Cell is not already hit-missed
         if (board[row][column] === 'miss') {
-            return
+            return false
         }
 
         // Hit was missed
@@ -150,6 +150,10 @@ export const GameBoard = (function() {
         if (typeof board[row][column] === 'object' && board[row][column] !== null) {
             const ship = board[row][column]
             
+            if (ship.hitCells.some(([r, c]) => r === row && c === column)) {
+                return false
+            }
+
             ship.hit(row, column)
         }
     }
