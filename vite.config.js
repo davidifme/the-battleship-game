@@ -5,6 +5,7 @@ import compression from 'vite-plugin-compression';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/the-battleship-game/',
   plugins: [react(), compression()],
   css: {
     postcss: {
