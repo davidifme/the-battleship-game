@@ -443,10 +443,6 @@ export const DomManager = (function() {
                         shipCell.classList.add('ship-cell')
                         shipContainer.appendChild(shipCell)
                     }
-
-                    addSafeEventListener(shipContainer, 'dragstart', (e) => {
-                        state.draggedShipLength = parseInt(e.target.dataset.length)
-                    })
         
                     shipsContainer.appendChild(shipContainer)
                 })
@@ -480,10 +476,6 @@ export const DomManager = (function() {
                         shipCell.classList.add('ship-cell')
                         shipContainer.appendChild(shipCell)
                     }
-        
-                    addSafeEventListener(shipContainer, 'dragstart', (e) => {
-                        state.draggedShipLength = parseInt(e.target.dataset.length)
-                    })
         
                     shipsContainer.appendChild(shipContainer)
                 })
@@ -1101,7 +1093,10 @@ export const DomManager = (function() {
         const column = parseInt(e.target.dataset.column)
         const board = Player.getPlayer(GameBoard.getCurrentPlayer()).board
         const ship = Ship.create(state.draggedShipLength)
-        const draggedShip = document.querySelector(`[data-name="${state.draggedShipName}"]`)
+
+        const currentPlayer = GameBoard.getCurrentPlayer()
+        const shipsContainerId = currentPlayer === 'player1' ? '#human .ships' : '.ships[data-player="player2"]'
+        const draggedShip = document.querySelector(`${shipsContainerId} [data-name="${state.draggedShipName}"]`)
 
         if (GameBoard.canBePlaced(row, column, board, ship.length, state.isHorizontal)) {
             GameBoard.place(row, column, board, ship, state.isHorizontal)
@@ -1113,6 +1108,8 @@ export const DomManager = (function() {
             }
         }
         clearHighlights()
+        state.draggedShipLength = null
+        state.draggedShipName = null
     }
 
     function clearHighlights() {
